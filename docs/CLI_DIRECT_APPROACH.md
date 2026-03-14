@@ -818,6 +818,10 @@ The complete script is in [Appendix A](#appendix-a-complete-ob-script).
 
 ### 7.4 Installation
 
+> **Note:** The `ob` script lives at `resources/ob-cli/ob` in this repository.
+> See [`resources/ob-cli/README.md`](../resources/ob-cli/README.md) for quick
+> installation instructions.
+
 **Step 1 — Download the script:**
 
 ```bash
@@ -1158,6 +1162,10 @@ consistently takes more than 5 seconds:
 ---
 
 ## Appendix A: Complete `ob` Script
+
+> **Note:** The canonical, installable copy of this script lives at
+> [`resources/ob-cli/ob`](../resources/ob-cli/ob). The version below is kept
+> for reference — use the file in `resources/ob-cli/` for installation.
 
 Copy this entire script to `~/.local/bin/ob` and run `chmod +x ~/.local/bin/ob`.
 

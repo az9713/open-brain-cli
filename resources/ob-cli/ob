@@ -1,0 +1,269 @@
+#!/usr/bin/env bash
+#
+# ob — Open Brain CLI
+# A lightweight command-line interface for Open Brain personal memory.
+# Dependencies: curl, jq
+# License: FSL-1.1-MIT (same as Open Brain)
+#
+set -euo pipefail
+
+OB_VERSION="1.0.0"
+
+# ─── Configuration ────────────────────────────────────────────────────────────
+
+: "${OB_SUPABASE_URL:=}"
+: "${OB_SUPABASE_KEY:=}"
+: "${OB_OPENROUTER_KEY:=}"
+: "${OB_THRESHOLD:=0.7}"
+: "${OB_COUNT:=10}"
+
+OPENROUTER_BASE="https://openrouter.ai/api/v1"
+
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+die() { echo "ob: error: $*" >&2; exit 1; }
+
+check_deps() {
+  command -v curl >/dev/null 2>&1 || die "curl is required but not installed"
+  command -v jq   >/dev/null 2>&1 || die "jq is required but not installed"
+}
+
+check_config() {
+  [[ -n "$OB_SUPABASE_URL" ]]  || die "OB_SUPABASE_URL is not set"
+  [[ -n "$OB_SUPABASE_KEY" ]]  || die "OB_SUPABASE_KEY is not set"
+  [[ -n "$OB_OPENROUTER_KEY" ]] || die "OB_OPENROUTER_KEY is not set"
+}
+
+supabase_headers() {
+  echo -H "apikey: $OB_SUPABASE_KEY" -H "Authorization: Bearer $OB_SUPABASE_KEY"
+}
+
+# ─── API Functions ────────────────────────────────────────────────────────────
+
+get_embedding() {
+  local text="$1"
+  curl -sf "$OPENROUTER_BASE/embeddings" \
+    -H "Authorization: Bearer $OB_OPENROUTER_KEY" \
+    -H "Content-Type: application/json" \
+    -d "$(jq -n --arg t "$text" '{model: "openai/text-embedding-3-small", input: $t}')" \
+    | jq -c '.data[0].embedding'
+}
+
+extract_metadata() {
+  local text="$1"
+  local system_prompt='Extract metadata from the user'\''s captured thought. Return JSON with: "people" (array of people mentioned, empty if none), "action_items" (array of implied to-dos, empty if none), "topics" (array of 1-3 short topic tags, always at least one), "type" (one of "observation", "task", "idea", "reference", "person_note"). Only extract what'\''s explicitly there.'
+
+  curl -sf "$OPENROUTER_BASE/chat/completions" \
+    -H "Authorization: Bearer $OB_OPENROUTER_KEY" \
+    -H "Content-Type: application/json" \
+    -d "$(jq -n --arg t "$text" --arg s "$system_prompt" '{
+      model: "openai/gpt-4o-mini",
+      response_format: {type: "json_object"},
+      messages: [
+        {role: "system", content: $s},
+        {role: "user", content: $t}
+      ]
+    }')" \
+    | jq -c '.choices[0].message.content | fromjson'
+}
+
+# ─── Commands ─────────────────────────────────────────────────────────────────
+
+cmd_capture() {
+  local content="${1:?Usage: ob capture \"thought text\"}"
+
+  echo "Generating embedding..." >&2
+  local embedding
+  embedding=$(get_embedding "$content") || die "Failed to generate embedding"
+
+  echo "Extracting metadata..." >&2
+  local metadata
+  metadata=$(extract_metadata "$content") || metadata='{"topics":["uncategorized"],"type":"observation"}'
+
+  echo "Saving thought..." >&2
+  local result
+  result=$(curl -sf -X POST "$OB_SUPABASE_URL/rest/v1/thoughts" \
+    -H "apikey: $OB_SUPABASE_KEY" \
+    -H "Authorization: Bearer $OB_SUPABASE_KEY" \
+    -H "Content-Type: application/json" \
+    -H "Prefer: return=representation" \
+    -d "$(jq -n \
+      --arg c "$content" \
+      --argjson e "$embedding" \
+      --argjson m "$metadata" \
+      '{content: $c, embedding: $e, metadata: $m}')" \
+  ) || die "Failed to insert thought"
+
+  echo "$result" | jq '{
+    success: true,
+    id: .[0].id,
+    content: .[0].content,
+    metadata: .[0].metadata,
+    created_at: .[0].created_at
+  }'
+}
+
+cmd_search() {
+  local query="${1:?Usage: ob search \"query text\"}"
+  local threshold="${OB_THRESHOLD}"
+  local count="${OB_COUNT}"
+  local json_output=false
+
+  shift
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --threshold) threshold="$2"; shift 2 ;;
+      --count)     count="$2"; shift 2 ;;
+      --json)      json_output=true; shift ;;
+      *) die "Unknown flag: $1" ;;
+    esac
+  done
+
+  local embedding
+  embedding=$(get_embedding "$query") || die "Failed to generate query embedding"
+
+  local results
+  results=$(curl -sf -X POST "$OB_SUPABASE_URL/rest/v1/rpc/match_thoughts" \
+    -H "apikey: $OB_SUPABASE_KEY" \
+    -H "Authorization: Bearer $OB_SUPABASE_KEY" \
+    -H "Content-Type: application/json" \
+    -d "$(jq -n \
+      --argjson e "$embedding" \
+      --argjson t "$threshold" \
+      --argjson c "$count" \
+      '{query_embedding: $e, match_threshold: $t, match_count: $c, filter: {}}')" \
+  ) || die "Failed to search thoughts"
+
+  if [[ "$json_output" == "true" ]]; then
+    echo "$results" | jq .
+    return
+  fi
+
+  local result_count
+  result_count=$(echo "$results" | jq 'length')
+
+  if [[ "$result_count" -eq 0 ]]; then
+    echo "No results found for: $query"
+    return
+  fi
+
+  echo "Found $result_count results:"
+  echo ""
+
+  echo "$results" | jq -r '.[] | "[" + (.similarity * 100 | round / 100 | tostring) + "] " + .content + "\n       Topics: " + ((.metadata.topics // []) | join(", ")) + (if (.metadata.people // []) | length > 0 then " | People: " + ((.metadata.people // []) | join(", ")) else "" end) + (if .metadata.type then " | Type: " + .metadata.type else "" end) + "\n       Captured: " + .created_at + "\n"'
+}
+
+cmd_recent() {
+  local count="${1:-$OB_COUNT}"
+
+  local results
+  results=$(curl -sf \
+    "$OB_SUPABASE_URL/rest/v1/thoughts?order=created_at.desc&limit=$count&select=id,content,metadata,created_at" \
+    -H "apikey: $OB_SUPABASE_KEY" \
+    -H "Authorization: Bearer $OB_SUPABASE_KEY" \
+  ) || die "Failed to list thoughts"
+
+  local result_count
+  result_count=$(echo "$results" | jq 'length')
+
+  echo "$result_count most recent thoughts:"
+  echo ""
+
+  echo "$results" | jq -r 'to_entries[] | "\(.key + 1). \(.value.content)\n   Topics: \((.value.metadata.topics // []) | join(", "))" + (if (.value.metadata.people // []) | length > 0 then " | People: \((.value.metadata.people // []) | join(", "))" else "" end) + "\n   Captured: \(.value.created_at)\n"'
+}
+
+cmd_stats() {
+  # Total count
+  local total
+  total=$(curl -sf \
+    "$OB_SUPABASE_URL/rest/v1/thoughts?select=id" \
+    -H "apikey: $OB_SUPABASE_KEY" \
+    -H "Authorization: Bearer $OB_SUPABASE_KEY" \
+    -H "Prefer: count=exact" \
+    -H "Range: 0-0" \
+    -I 2>/dev/null | grep -i content-range | sed 's/.*\///' | tr -d '\r\n') || total="unknown"
+
+  # Recent thoughts for date range and aggregation
+  local all_thoughts
+  all_thoughts=$(curl -sf \
+    "$OB_SUPABASE_URL/rest/v1/thoughts?select=metadata,created_at&order=created_at.asc" \
+    -H "apikey: $OB_SUPABASE_KEY" \
+    -H "Authorization: Bearer $OB_SUPABASE_KEY" \
+  ) || die "Failed to fetch thoughts"
+
+  local oldest newest
+  oldest=$(echo "$all_thoughts" | jq -r 'first.created_at // "N/A"' | cut -d'T' -f1)
+  newest=$(echo "$all_thoughts" | jq -r 'last.created_at // "N/A"' | cut -d'T' -f1)
+
+  local top_topics
+  top_topics=$(echo "$all_thoughts" | jq -r '[.[].metadata.topics // [] | .[]] | group_by(.) | map({topic: .[0], count: length}) | sort_by(-.count) | .[0:5] | .[].topic')
+
+  local top_people
+  top_people=$(echo "$all_thoughts" | jq -r '[.[].metadata.people // [] | .[]] | group_by(.) | map({person: .[0], count: length}) | sort_by(-.count) | .[0:5] | .[].person')
+
+  local type_dist
+  type_dist=$(echo "$all_thoughts" | jq -r '[.[].metadata.type // "unknown"] | group_by(.) | map("    " + .[0] + ": " + (length | tostring)) | .[]')
+
+  echo "Open Brain Statistics:"
+  echo "  Total thoughts: $total"
+  echo "  Oldest: $oldest"
+  echo "  Newest: $newest"
+  echo "  Top topics: $(echo "$top_topics" | tr '\n' ', ' | sed 's/,$//' | sed 's/,/, /g')"
+  echo "  Top people: $(echo "$top_people" | tr '\n' ', ' | sed 's/,$//' | sed 's/,/, /g')"
+  echo "  Type distribution:"
+  echo "$type_dist"
+}
+
+cmd_version() {
+  echo "ob v$OB_VERSION"
+  if [[ -n "$OB_SUPABASE_URL" ]]; then
+    echo "Supabase URL: $(echo "$OB_SUPABASE_URL" | sed 's|https://\([^.]*\)\..*|\1|')... (configured)"
+  else
+    echo "Supabase URL: not configured"
+  fi
+  if [[ -n "$OB_OPENROUTER_KEY" ]]; then
+    echo "OpenRouter:   configured"
+  else
+    echo "OpenRouter:   not configured"
+  fi
+}
+
+# ─── Main ─────────────────────────────────────────────────────────────────────
+
+main() {
+  check_deps
+
+  local cmd="${1:-help}"
+  shift 2>/dev/null || true
+
+  case "$cmd" in
+    capture)  check_config; cmd_capture "$@" ;;
+    search)   check_config; cmd_search "$@" ;;
+    recent)   check_config; cmd_recent "$@" ;;
+    stats)    check_config; cmd_stats ;;
+    version)  cmd_version ;;
+    help|--help|-h)
+      echo "ob — Open Brain CLI v$OB_VERSION"
+      echo ""
+      echo "Usage:"
+      echo "  ob capture \"thought text\"        Save a thought with embedding + metadata"
+      echo "  ob search  \"query\" [--threshold N] [--count N] [--json]"
+      echo "                                    Semantic search across thoughts"
+      echo "  ob recent  [count]                List recent thoughts (default: 10)"
+      echo "  ob stats                          Show knowledge base statistics"
+      echo "  ob version                        Print version and config status"
+      echo ""
+      echo "Environment variables:"
+      echo "  OB_SUPABASE_URL    Supabase project URL (required)"
+      echo "  OB_SUPABASE_KEY    Supabase service role key (required)"
+      echo "  OB_OPENROUTER_KEY  OpenRouter API key (required)"
+      echo "  OB_THRESHOLD       Default similarity threshold (default: 0.7)"
+      echo "  OB_COUNT           Default result count (default: 10)"
+      ;;
+    *)
+      die "Unknown command: $cmd (run 'ob help' for usage)"
+      ;;
+  esac
+}
+
+main "$@"
