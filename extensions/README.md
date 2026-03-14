@@ -21,4 +21,4 @@ Every extension requires a working Open Brain setup. If you haven't built one ye
 
 ## Contributing
 
-Extensions are **curated** — discuss with maintainers before submitting. [Propose a new extension](https://github.com/NateBJones-Projects/OB1/issues/new?template=extension-submission.yml).
+Extensions are **curated** — discuss with maintainers before submitting. [Propose a new extension](https://github.com/az9713/open-brain-cli/issues/new?template=extension-submission.yml).

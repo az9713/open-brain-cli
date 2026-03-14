@@ -12,6 +12,7 @@ See the [Contributor Ladder](CONTRIBUTING.md#contributor-ladder) for how progres
 | **Matt Hallett** | Community admin, content, contribution standards, repo governance |
 | **Jonathan Edwards** | Content, companion prompts, FAQ, community |
 | **Kaleab** | Initial repo scaffold, CI workflow, seed contributions |
+| **az9713** | Maintainer, CLI edition |
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 

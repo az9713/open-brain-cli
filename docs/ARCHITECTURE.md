@@ -101,6 +101,33 @@ Open Brain is a three-tier system. Think of it like a classic client-server appl
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+### CLI-Direct Path (Alternative to Tier 2)
+
+Terminal-based AI tools bypass Tier 2 entirely using the `ob` CLI:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    CLI-DIRECT PATH                                    │
+│                                                                      │
+│   ┌──────────────┐  ┌──────────────┐  ┌──────────────┐             │
+│   │ Claude Code  │  │ OpenAI Codex │  │ Gemini CLI   │             │
+│   └──────┬───────┘  └──────┬───────┘  └──────┬───────┘             │
+│          │                 │                  │                       │
+│          └─────────────────┴──────────────────┘                      │
+│                            │                                         │
+│                    ob CLI (bash)                                      │
+│                    curl + jq                                         │
+│                            │                                         │
+│              ┌─────────────┴─────────────┐                           │
+│              │                           │                           │
+│              ▼                           ▼                           │
+│       OpenRouter API              Supabase REST API                  │
+│       (embed + metadata)          (thoughts table)                   │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+Both paths read and write the same `thoughts` table. CLI-captured thoughts include `"source": "ob-cli"` in metadata.
+
 ### Background: What Each Tier Does
 
 **Tier 1 (AI Clients)** are tools like Claude Desktop or ChatGPT running on your computer or in your browser. They are "smart" in the sense that they can understand natural language, but they have no persistent memory between sessions. Open Brain gives them that memory.

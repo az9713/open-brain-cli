@@ -2058,4 +2058,4 @@ Everything else is inherited from the template. Lark integration: done.
 
 ---
 
-*Part of the [Open Brain project](https://github.com/NateBJones-Projects/OB1). Built by the community. See `CONTRIBUTING.md` to submit a new integration.*
+*Part of the [Open Brain CLI project](https://github.com/az9713/open-brain-cli). Built by the community. See `CONTRIBUTING.md` to submit a new integration.*

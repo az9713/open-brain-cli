@@ -8,7 +8,7 @@ https://github.com/user-attachments/assets/85208d73-112b-4204-82fd-d03b6c397a8b
 
 ## What You're Building
 
-A database that stores your thoughts with vector embeddings, plus an MCP server that lets any AI assistant search and write to your brain. No Slack required — capture happens from whatever AI tool you're already using (Claude Desktop, ChatGPT, Claude Code, Cursor).
+A database that stores your thoughts with vector embeddings, connected to any AI tool you already use. GUI clients (Claude Desktop, ChatGPT, Cursor) connect via MCP. Terminal tools (Claude Code, Codex, Gemini CLI) use the lightweight `ob` CLI — no MCP server needed. Either way, capture happens naturally from wherever you're working.
 
 > **Using a terminal-based AI tool (Claude Code, Codex, Gemini CLI)?** You can skip MCP entirely and use the lightweight `ob` CLI instead. See the [CLI-Direct Approach](CLI_DIRECT_APPROACH.md) guide and the [`ob` CLI tool](../resources/ob-cli/). You still need Steps 1–4 below (database + OpenRouter), but you can skip Steps 5–7 (Edge Function and MCP).
 
@@ -242,7 +242,50 @@ Why OpenRouter instead of OpenAI directly? One account, one key, one billing rel
 
 ---
 
+## Step 4b: CLI Setup (Terminal AI Tools)
+
+> **Skip this step** if you use GUI clients (Claude Desktop, ChatGPT, Cursor). This is only for developers using terminal-based AI tools like Claude Code, Codex, or Gemini CLI.
+
+If you use a terminal-based AI tool, you can skip Steps 5–7 entirely and use the `ob` CLI instead. It provides the same four capabilities (capture, search, recent, stats) plus delete and connectivity checks — using just `curl` and `jq`.
+
+### Install the CLI
+
+```bash
+mkdir -p ~/.local/bin
+cp resources/ob-cli/ob ~/.local/bin/ob
+chmod +x ~/.local/bin/ob
+export PATH="$HOME/.local/bin:$PATH"  # Add to ~/.bashrc or ~/.zshrc
+```
+
+### Set Environment Variables
+
+Add to your `~/.bashrc`, `~/.zshrc`, or `~/.profile`:
+
+```bash
+export OB_SUPABASE_URL="your-project-url-from-step-3"
+export OB_SUPABASE_KEY="your-secret-key-from-step-3"
+export OB_OPENROUTER_KEY="your-openrouter-key-from-step-4"
+```
+
+Reload your shell: `source ~/.bashrc` (or `~/.zshrc`).
+
+### Verify
+
+```bash
+ob check                              # Test connectivity
+ob capture "My first Open Brain thought"  # Save a test thought
+ob search "first thought"             # Search for it
+```
+
+**You're done.** Skip to [Step 8: Use It](#step-8-use-it). Steps 5–7 are for GUI clients only.
+
+> **Windows users:** The `ob` script requires Git Bash, WSL, or a similar bash environment.
+
+---
+
 ## Step 5: Create an Access Key
+
+> **GUI clients only.** If you set up the `ob` CLI in Step 4b, skip ahead to [Step 8](#step-8-use-it).
 
 Your MCP server will be a public URL. The Supabase project ref in that URL is random enough that nobody will stumble onto it, but let's close the gap entirely. You'll generate a simple access key that the server checks on every request. Takes 30 seconds.
 
@@ -269,6 +312,8 @@ supabase secrets set MCP_ACCESS_KEY=your-generated-key-here
 ---
 
 ## Step 6: Deploy the MCP Server
+
+> **GUI clients only.** If you set up the `ob` CLI in Step 4b, skip ahead to [Step 8](#step-8-use-it).
 
 One Edge Function. Four MCP tools: semantic search, browse recent thoughts, stats, and capture. This gives any MCP-connected AI the ability to read and write to your brain.
 
@@ -369,6 +414,8 @@ Paste this into your credential tracker as the MCP Connection URL. This is what 
 ---
 
 ## Step 7: Connect to Your AI
+
+> **GUI clients only.** If you set up the `ob` CLI in Step 4b, skip ahead to [Step 8](#step-8-use-it).
 
 You need your MCP Connection URL from the credential tracker — the one with `?key=` at the end.
 

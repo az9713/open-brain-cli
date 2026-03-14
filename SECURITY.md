@@ -14,7 +14,7 @@ We will acknowledge your report within 48 hours and aim to provide a fix or miti
 
 ## Scope
 
-This policy covers the contents of this repository: contribution templates, metadata schemas, CI workflows, and community documentation. It does not cover the upstream Open Brain infrastructure (Supabase instance, MCP server, etc.).
+This policy covers the contents of this repository: contribution templates, metadata schemas, CI workflows, community documentation, and the `ob` CLI tool.
 
 ## What Counts as a Vulnerability
 

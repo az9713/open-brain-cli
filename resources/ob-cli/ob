@@ -5,9 +5,11 @@
 # Dependencies: curl, jq
 # License: FSL-1.1-MIT (same as Open Brain)
 #
+# Windows note: requires Git Bash, WSL, or similar bash environment.
+#
 set -euo pipefail
 
-OB_VERSION="1.0.0"
+OB_VERSION="1.1.0"
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 
@@ -34,26 +36,36 @@ check_config() {
   [[ -n "$OB_OPENROUTER_KEY" ]] || die "OB_OPENROUTER_KEY is not set"
 }
 
-supabase_headers() {
-  echo -H "apikey: $OB_SUPABASE_KEY" -H "Authorization: Bearer $OB_SUPABASE_KEY"
-}
-
 # ─── API Functions ────────────────────────────────────────────────────────────
 
 get_embedding() {
   local text="$1"
-  curl -sf "$OPENROUTER_BASE/embeddings" \
+  local response http_code body
+
+  response=$(curl -s -w '\n%{http_code}' "$OPENROUTER_BASE/embeddings" \
     -H "Authorization: Bearer $OB_OPENROUTER_KEY" \
     -H "Content-Type: application/json" \
-    -d "$(jq -n --arg t "$text" '{model: "openai/text-embedding-3-small", input: $t}')" \
-    | jq -c '.data[0].embedding'
+    -d "$(jq -n --arg t "$text" '{model: "openai/text-embedding-3-small", input: $t}')")
+
+  http_code=$(echo "$response" | tail -1)
+  body=$(echo "$response" | sed '$d')
+
+  if [[ "$http_code" -lt 200 || "$http_code" -ge 300 ]]; then
+    local err_msg
+    err_msg=$(echo "$body" | jq -r '.error.message // .error // "unknown error"' 2>/dev/null) || err_msg="HTTP $http_code"
+    die "OpenRouter embedding failed: $err_msg"
+  fi
+
+  echo "$body" | jq -c '.data[0].embedding'
 }
 
 extract_metadata() {
   local text="$1"
   local system_prompt='Extract metadata from the user'\''s captured thought. Return JSON with: "people" (array of people mentioned, empty if none), "action_items" (array of implied to-dos, empty if none), "topics" (array of 1-3 short topic tags, always at least one), "type" (one of "observation", "task", "idea", "reference", "person_note"). Only extract what'\''s explicitly there.'
 
-  curl -sf "$OPENROUTER_BASE/chat/completions" \
+  local response http_code body
+
+  response=$(curl -s -w '\n%{http_code}' "$OPENROUTER_BASE/chat/completions" \
     -H "Authorization: Bearer $OB_OPENROUTER_KEY" \
     -H "Content-Type: application/json" \
     -d "$(jq -n --arg t "$text" --arg s "$system_prompt" '{
@@ -63,8 +75,19 @@ extract_metadata() {
         {role: "system", content: $s},
         {role: "user", content: $t}
       ]
-    }')" \
-    | jq -c '.choices[0].message.content | fromjson'
+    }')")
+
+  http_code=$(echo "$response" | tail -1)
+  body=$(echo "$response" | sed '$d')
+
+  if [[ "$http_code" -lt 200 || "$http_code" -ge 300 ]]; then
+    echo '{"topics":["uncategorized"],"type":"observation"}' >&2
+    echo "ob: warning: metadata extraction failed (HTTP $http_code), using defaults" >&2
+    echo '{"topics":["uncategorized"],"type":"observation"}'
+    return
+  fi
+
+  echo "$body" | jq -c '.choices[0].message.content | fromjson'
 }
 
 # ─── Commands ─────────────────────────────────────────────────────────────────
@@ -79,6 +102,9 @@ cmd_capture() {
   echo "Extracting metadata..." >&2
   local metadata
   metadata=$(extract_metadata "$content") || metadata='{"topics":["uncategorized"],"type":"observation"}'
+
+  # Add source marker to metadata
+  metadata=$(echo "$metadata" | jq -c '. + {source: "ob-cli"}')
 
   echo "Saving thought..." >&2
   local result
@@ -150,7 +176,7 @@ cmd_search() {
   echo "Found $result_count results:"
   echo ""
 
-  echo "$results" | jq -r '.[] | "[" + (.similarity * 100 | round / 100 | tostring) + "] " + .content + "\n       Topics: " + ((.metadata.topics // []) | join(", ")) + (if (.metadata.people // []) | length > 0 then " | People: " + ((.metadata.people // []) | join(", ")) else "" end) + (if .metadata.type then " | Type: " + .metadata.type else "" end) + "\n       Captured: " + .created_at + "\n"'
+  echo "$results" | jq -r '.[] | "[" + ((.similarity * 100 | round | tostring) + "%") + "] " + .content + "\n       Topics: " + ((.metadata.topics // []) | join(", ")) + (if (.metadata.people // []) | length > 0 then " | People: " + ((.metadata.people // []) | join(", ")) else "" end) + (if .metadata.type then " | Type: " + .metadata.type else "" end) + "\n       Captured: " + .created_at + "\n"'
 }
 
 cmd_recent() {
@@ -172,21 +198,52 @@ cmd_recent() {
   echo "$results" | jq -r 'to_entries[] | "\(.key + 1). \(.value.content)\n   Topics: \((.value.metadata.topics // []) | join(", "))" + (if (.value.metadata.people // []) | length > 0 then " | People: \((.value.metadata.people // []) | join(", "))" else "" end) + "\n   Captured: \(.value.created_at)\n"'
 }
 
+cmd_delete() {
+  local id="${1:?Usage: ob delete <thought-id>}"
+
+  local result
+  result=$(curl -s -w '\n%{http_code}' -X DELETE \
+    "$OB_SUPABASE_URL/rest/v1/thoughts?id=eq.$id" \
+    -H "apikey: $OB_SUPABASE_KEY" \
+    -H "Authorization: Bearer $OB_SUPABASE_KEY" \
+    -H "Prefer: return=representation")
+
+  local http_code body
+  http_code=$(echo "$result" | tail -1)
+  body=$(echo "$result" | sed '$d')
+
+  if [[ "$http_code" -lt 200 || "$http_code" -ge 300 ]]; then
+    die "Failed to delete thought (HTTP $http_code)"
+  fi
+
+  local deleted_count
+  deleted_count=$(echo "$body" | jq 'length')
+
+  if [[ "$deleted_count" -eq 0 ]]; then
+    echo "No thought found with id: $id"
+    return 1
+  fi
+
+  echo "Deleted thought: $id"
+}
+
 cmd_stats() {
-  # Total count
+  # Total count using proper HEAD request with header extraction
   local total
-  total=$(curl -sf \
+  local headers
+  headers=$(curl -sf -D - -o /dev/null \
     "$OB_SUPABASE_URL/rest/v1/thoughts?select=id" \
     -H "apikey: $OB_SUPABASE_KEY" \
     -H "Authorization: Bearer $OB_SUPABASE_KEY" \
     -H "Prefer: count=exact" \
-    -H "Range: 0-0" \
-    -I 2>/dev/null | grep -i content-range | sed 's/.*\///' | tr -d '\r\n') || total="unknown"
+    -H "Range: 0-0") || true
+  total=$(echo "$headers" | grep -i content-range | sed 's/.*\///' | tr -d '\r\n')
+  [[ -z "$total" ]] && total="unknown"
 
-  # Recent thoughts for date range and aggregation
+  # Fetch thoughts for aggregation (limited to 10000 rows)
   local all_thoughts
   all_thoughts=$(curl -sf \
-    "$OB_SUPABASE_URL/rest/v1/thoughts?select=metadata,created_at&order=created_at.asc" \
+    "$OB_SUPABASE_URL/rest/v1/thoughts?select=metadata,created_at&order=created_at.asc&limit=10000" \
     -H "apikey: $OB_SUPABASE_KEY" \
     -H "Authorization: Bearer $OB_SUPABASE_KEY" \
   ) || die "Failed to fetch thoughts"
@@ -212,6 +269,71 @@ cmd_stats() {
   echo "  Top people: $(echo "$top_people" | tr '\n' ', ' | sed 's/,$//' | sed 's/,/, /g')"
   echo "  Type distribution:"
   echo "$type_dist"
+}
+
+cmd_check() {
+  echo "Checking Open Brain connectivity..."
+  echo ""
+
+  # Check config
+  local config_ok=true
+  if [[ -z "$OB_SUPABASE_URL" ]]; then
+    echo "  OB_SUPABASE_URL:   NOT SET"
+    config_ok=false
+  else
+    echo "  OB_SUPABASE_URL:   $(echo "$OB_SUPABASE_URL" | sed 's|https://\([^.]*\)\..*|\1|')... (set)"
+  fi
+
+  if [[ -z "$OB_SUPABASE_KEY" ]]; then
+    echo "  OB_SUPABASE_KEY:   NOT SET"
+    config_ok=false
+  else
+    echo "  OB_SUPABASE_KEY:   ***...$(echo "$OB_SUPABASE_KEY" | tail -c 5) (set)"
+  fi
+
+  if [[ -z "$OB_OPENROUTER_KEY" ]]; then
+    echo "  OB_OPENROUTER_KEY: NOT SET"
+    config_ok=false
+  else
+    echo "  OB_OPENROUTER_KEY: ***...$(echo "$OB_OPENROUTER_KEY" | tail -c 5) (set)"
+  fi
+
+  echo ""
+
+  if [[ "$config_ok" != "true" ]]; then
+    echo "  Some environment variables are not set. Set them and try again."
+    return 1
+  fi
+
+  # Test Supabase connectivity
+  local sb_status
+  sb_status=$(curl -s -o /dev/null -w '%{http_code}' \
+    "$OB_SUPABASE_URL/rest/v1/thoughts?select=id&limit=1" \
+    -H "apikey: $OB_SUPABASE_KEY" \
+    -H "Authorization: Bearer $OB_SUPABASE_KEY")
+
+  if [[ "$sb_status" -ge 200 && "$sb_status" -lt 300 ]]; then
+    echo "  Supabase:          connected (HTTP $sb_status)"
+  else
+    echo "  Supabase:          FAILED (HTTP $sb_status)"
+    return 1
+  fi
+
+  # Test OpenRouter connectivity
+  local or_status
+  or_status=$(curl -s -o /dev/null -w '%{http_code}' \
+    "$OPENROUTER_BASE/models" \
+    -H "Authorization: Bearer $OB_OPENROUTER_KEY")
+
+  if [[ "$or_status" -ge 200 && "$or_status" -lt 300 ]]; then
+    echo "  OpenRouter:        connected (HTTP $or_status)"
+  else
+    echo "  OpenRouter:        FAILED (HTTP $or_status)"
+    return 1
+  fi
+
+  echo ""
+  echo "  All checks passed. Ready to use."
 }
 
 cmd_version() {
@@ -240,7 +362,9 @@ main() {
     capture)  check_config; cmd_capture "$@" ;;
     search)   check_config; cmd_search "$@" ;;
     recent)   check_config; cmd_recent "$@" ;;
+    delete)   check_config; cmd_delete "$@" ;;
     stats)    check_config; cmd_stats ;;
+    check)    cmd_check ;;
     version)  cmd_version ;;
     help|--help|-h)
       echo "ob — Open Brain CLI v$OB_VERSION"
@@ -250,7 +374,9 @@ main() {
       echo "  ob search  \"query\" [--threshold N] [--count N] [--json]"
       echo "                                    Semantic search across thoughts"
       echo "  ob recent  [count]                List recent thoughts (default: 10)"
+      echo "  ob delete  <thought-id>           Delete a thought by ID"
       echo "  ob stats                          Show knowledge base statistics"
+      echo "  ob check                          Verify connectivity to Supabase + OpenRouter"
       echo "  ob version                        Print version and config status"
       echo ""
       echo "Environment variables:"

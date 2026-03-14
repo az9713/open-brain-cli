@@ -1,12 +1,12 @@
-# CLAUDE.md — Agent Instructions for Open Brain
+# CLAUDE.md
 
-This file helps AI coding tools (Claude Code, Codex, Cursor, etc.) work effectively in this repo.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## What This Repo Is
 
-Open Brain is a persistent AI memory system — one database (Supabase + pgvector), one MCP protocol, any AI client. This repo contains the extensions, recipes, schemas, dashboards, and integrations that the community builds on top of the core Open Brain setup.
+Open Brain CLI is a CLI-first personal AI memory system — one database (Supabase + pgvector), one CLI tool (`ob`), any AI. This repo provides the `ob` CLI for direct terminal access, plus extensions, recipes, schemas, dashboards, integrations, and comprehensive docs. Originally based on [Open Brain by Nate B. Jones](https://github.com/NateBJones-Projects/OB1).
 
-**License:** FSL-1.1-MIT. No commercial derivative works. Keep this in mind when generating code or suggesting dependencies.
+**License:** FSL-1.1-MIT. No commercial derivative works.
 
 ## Repo Structure
 
@@ -21,7 +21,7 @@ docs/           — Setup guides, FAQ, companion prompts.
 resources/      — Claude Skill, companion files, ob CLI tool.
 ```
 
-Every contribution lives in its own subfolder under the right category and must include `README.md` + `metadata.json`.
+Every contribution in recipes/schemas/dashboards/integrations/extensions/primitives must live in its own subfolder and include `README.md` + `metadata.json`.
 
 ## Guard Rails
 
@@ -30,32 +30,42 @@ Every contribution lives in its own subfolder under the right category and must 
 - **No binary blobs** over 1MB. No `.exe`, `.dmg`, `.zip`, `.tar.gz`.
 - **No `DROP TABLE`, `DROP DATABASE`, `TRUNCATE`, or unqualified `DELETE FROM`** in SQL files.
 
-## PR Standards
+## Architecture — The Two Access Paths
 
-- **Title format:** `[category] Short description` (e.g., `[recipes] Email history import via Gmail API`)
-- **Branch convention:** `contrib/<github-username>/<short-description>`
-- **Commit prefixes:** `[category]` matching the contribution type
-- Every PR must pass the 11 automated review checks in `.github/workflows/ob1-review.yml` before human review
-- See `CONTRIBUTING.md` for the full review process, metadata.json template, and README requirements
+Open Brain has two ways to access the same Supabase PostgreSQL database:
+
+```
+MCP path (GUI clients like Claude Desktop, ChatGPT):
+  AI Client → MCP Server (Edge Function) → OpenRouter + Supabase PostgreSQL
+
+CLI-Direct path (terminal tools like Claude Code, Codex, Gemini CLI):
+  AI Tool → ob CLI (bash, curl+jq) → OpenRouter + Supabase PostgreSQL
+```
+
+Both paths read/write the same `thoughts` table and are fully interoperable. The `ob` CLI tool lives at `resources/ob-cli/ob` and provides 7 commands: `capture`, `search`, `recent`, `delete`, `stats`, `check`, `version`. CLI-captured thoughts include `"source": "ob-cli"` in metadata.
+
+The core data flow for both paths: user text → OpenRouter embedding (text-embedding-3-small) + metadata extraction (gpt-4o-mini) → INSERT into `thoughts` table with pgvector embedding.
+
+## Automated PR Review
+
+`.github/workflows/ob1-review.yml` runs 13 checks on every PR to `main`. Key rules:
+
+- PR title must start with `[category]` (e.g., `[recipes]`, `[docs]`)
+- Branch convention: `contrib/<github-username>/<short-description>`
+- Commit prefixes: `[category]` matching contribution type
+- Contributions need `README.md` + valid `metadata.json` (see `.github/metadata.schema.json` and `CONTRIBUTING.md` for required fields)
+- `[docs]` prefix or PRs that don't touch contribution dirs skip contribution checks
+- Contribution README must include: Prerequisites, step-by-step instructions, expected outcome sections
+- Category-specific: schemas need `.sql`, dashboards need frontend code, extensions need both `.sql` and code, primitives need 200+ word README
+- Declared `requires_primitives` must exist in `primitives/` and be linked in README
 
 ## Key Files
 
-- `CONTRIBUTING.md` — Source of truth for contribution rules, metadata format, and the review process
-- `.github/workflows/ob1-review.yml` — Automated PR review (11 checks)
+- `CONTRIBUTING.md` — Source of truth for contribution rules, metadata format, review process, 11+ automated checks
+- `.github/workflows/ob1-review.yml` — Automated PR review
 - `.github/metadata.schema.json` — JSON schema for metadata.json validation
-- `.github/PULL_REQUEST_TEMPLATE.md` — PR description template
-- `LICENSE.md` — FSL-1.1-MIT terms
-
-## Documentation
-
-- `docs/QUICKSTART.md` — 10-step guided tutorial for new users (first captures, searches, quick wins)
-- `docs/USER_GUIDE.md` — Complete user guide with 10 use cases, extension overviews, and troubleshooting
-- `docs/ARCHITECTURE.md` — System architecture with ASCII diagrams at multiple abstraction levels
-- `docs/DEVELOPER_GUIDE.md` — Comprehensive developer guide (builds extensions, recipes, integrations; written for C/Java developers new to web dev)
-- `docs/API_REFERENCE.md` — All 35+ MCP tools, database schemas, authentication, and environment variables
-- `docs/STUDY_PLAN.md` — Zero-to-hero learning plan in 13 phases covering web fundamentals through capstone projects
-- `docs/01-getting-started.md` — Full system setup guide (45 minutes, no coding experience needed)
-- `docs/02-companion-prompts.md` — Five prompts for memory migration, use case discovery, and weekly review
-- `docs/03-faq.md` — Common issues, architecture questions, and community tips
-- `docs/04-ai-assisted-setup.md` — Build with Cursor, Claude Code, or other AI coding tools
-- `docs/CLI_DIRECT_APPROACH.md` — CLI-Direct approach: use Open Brain from terminal AI tools without MCP
+- `docs/CLI_DIRECT_APPROACH.md` — Full CLI-Direct architecture guide with ob CLI design
+- `docs/ARCHITECTURE.md` — System architecture with ASCII diagrams
+- `docs/API_REFERENCE.md` — `ob` CLI reference, all 35+ MCP tools, database schemas, environment variables
+- `docs/DEVELOPER_GUIDE.md` — Developer guide for building extensions/recipes/integrations
+- `resources/ob-cli/ob` — The ob CLI bash script (curl + jq, no other runtime deps)

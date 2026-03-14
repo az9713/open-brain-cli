@@ -198,7 +198,7 @@ Your agent will be able to answer questions like:
 
 - Verify the thought_id exists in your core Open Brain `thoughts` table
 - Check that the user has permission to access that thought
-- Ensure the core Open Brain MCP server is running
+- Ensure the core Open Brain MCP server (or `ob` CLI) is running
 
 ### RLS "permission denied" errors
 

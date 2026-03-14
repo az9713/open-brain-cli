@@ -1,55 +1,123 @@
 <p align="center">
-  <img src=".github/ob1-logo-wide.png" alt="Open Brain" width="600">
+  <img src=".github/ob1-logo-wide.png" alt="Open Brain CLI" width="600">
 </p>
 
-<h1 align="center">Open Brain — Documentation-Enhanced Edition</h1>
+<h1 align="center">Open Brain CLI</h1>
 
-> **This repository is a documentation-enhanced clone of [NateBJones-Projects/OB1](https://github.com/NateBJones-Projects/OB1).** All original code, schemas, and guides are preserved. This fork adds comprehensive documentation for developers and users new to the Open Brain ecosystem — including an architecture deep dive with ASCII diagrams, a complete API reference, a developer guide written for C/Java developers new to web development, a zero-to-hero study plan, a quick start tutorial, and a detailed technical explainer of how every piece of the system works. For the original upstream repository and community, visit [github.com/NateBJones-Projects/OB1](https://github.com/NateBJones-Projects/OB1).
+A CLI-first personal AI memory system. One database (Supabase + pgvector), one command-line tool (`ob`), any AI. Capture thoughts, search by meaning, and give every AI tool you use a shared persistent memory — all from your terminal.
 
-The infrastructure layer for your thinking. One database, one AI gateway, one chat channel. Any AI you use can plug in. No middleware, no SaaS chains, no Zapier.
+```bash
+ob capture "Sarah mentioned she's thinking about leaving her job to start a consulting business"
+ob search "career changes"    # finds Sarah's thought by meaning, not keywords
+ob recent 5                   # latest thoughts
+ob stats                      # knowledge base overview
+```
 
-This isn't a notes app. It's a database with vector search and an open protocol — built so that every AI tool you use shares the same persistent memory of you. Claude, ChatGPT, Cursor, Claude Code, whatever ships next month. One brain. All of them.
+No MCP server required. No Edge Function deployment. No Node.js. Just `curl`, `jq`, and three environment variables.
 
-> Open Brain was created by [Nate B. Jones](https://natesnewsletter.substack.com/). Follow the [Substack](https://natesnewsletter.substack.com/) for updates, discussion, and the companion prompt pack. Join the [Discord](https://discord.gg/Cgh9WJEkeG) for real-time help and community.
+> Open Brain was originally created by [Nate B. Jones](https://natesnewsletter.substack.com/). This repository is the CLI edition, maintained at [github.com/az9713/open-brain-cli](https://github.com/az9713/open-brain-cli).
 
-https://github.com/user-attachments/assets/80a79b09-f323-42c6-b11b-de10bb6fa36f
+## How It Works
 
-## Getting Started
+```
+You type:  ob capture "Met with design team, decided to cut sidebar panels"
+           │
+           ├─► OpenRouter generates a 1536-dim embedding (meaning vector)
+           ├─► gpt-4o-mini extracts metadata (topics, people, action items)
+           └─► Both stored in Supabase PostgreSQL (thoughts table + pgvector)
 
-https://github.com/user-attachments/assets/85208d73-112b-4204-82fd-d03b6c397a8b
+You type:  ob search "dashboard redesign decisions"
+           │
+           ├─► Your query gets embedded
+           └─► pgvector finds semantically similar thoughts (not keyword matching)
+```
 
-Never built an Open Brain? Start here:
+## Quick Start
 
-1. **[Quick Start Guide](docs/QUICKSTART.md)** — Already set up? Get your first 10 wins in 5 minutes.
-2. **[Setup Guide](docs/01-getting-started.md)** — Build the full system (database, AI gateway, Slack capture, MCP server) in about 45 minutes. No coding experience needed.
-3. **[AI-Assisted Setup](docs/04-ai-assisted-setup.md)** — Prefer building with Cursor, Claude Code, or another AI coding tool? Point it at this repo and go. Same system, different workflow.
-4. **[CLI-Direct Approach](docs/CLI_DIRECT_APPROACH.md)** — Use Claude Code, Codex, or Gemini CLI? Skip MCP entirely and use the lightweight [`ob` CLI tool](resources/ob-cli/) for direct access with just `curl` and `jq`.
-5. **[Companion Prompts](docs/02-companion-prompts.md)** — Five prompts that help you migrate your memories, discover use cases, and build the capture habit.
-6. **Then pick Extension 1** and start building.
+### Prerequisites
 
-**If you hit a wall:** We built a [FAQ](docs/03-faq.md) that covers the most common questions and gotchas. And if you need real-time help, we created dedicated AI assistants that know this system inside and out: a [Claude Skill](https://www.notion.so/product-templates/Open-Brain-Companion-Claude-Skill-31a5a2ccb526802797caeb37df3ba3cb?source=copy_link), a [ChatGPT Custom GPT](https://chatgpt.com/g/g-69a892b6a7708191b00e48ff655d5597-nate-jones-open-brain-assistant), and a [Gemini GEM](https://gemini.google.com/gem/1fDsAENjhdku-3RufY7ystbS1Md8MtDCg?usp=sharing). Use whichever one matches the AI tool you already use.
+- A Supabase project (free tier) with the `thoughts` table and `match_thoughts()` function — see [Database Setup](docs/01-getting-started.md#step-1-create-your-supabase-project) (Steps 1-3)
+- An [OpenRouter](https://openrouter.ai) API key ($5 credit lasts months)
+- `curl` and `jq` installed
+- **Windows:** Requires Git Bash, WSL, or similar bash environment
+
+### Install
+
+```bash
+# Copy the CLI to your PATH
+mkdir -p ~/.local/bin
+cp resources/ob-cli/ob ~/.local/bin/ob
+chmod +x ~/.local/bin/ob
+
+# Or clone and install
+git clone https://github.com/az9713/open-brain-cli.git
+cp open-brain-cli/resources/ob-cli/ob ~/.local/bin/ob
+chmod +x ~/.local/bin/ob
+```
+
+### Configure
+
+Add to `~/.bashrc` or `~/.zshrc`:
+
+```bash
+export OB_SUPABASE_URL="https://your-project-ref.supabase.co"
+export OB_SUPABASE_KEY="your-service-role-key"
+export OB_OPENROUTER_KEY="your-openrouter-key"
+```
+
+### Verify
+
+```bash
+ob check     # test connectivity to Supabase + OpenRouter
+ob capture "My first Open Brain thought"
+ob search "first thought"
+ob recent
+```
+
+## Commands
+
+| Command | Description |
+|---|---|
+| `ob capture "text"` | Save a thought with embedding + metadata |
+| `ob search "query" [--threshold N] [--count N] [--json]` | Semantic search across thoughts |
+| `ob recent [count]` | List recent thoughts (default: 10) |
+| `ob delete <thought-id>` | Delete a thought by ID |
+| `ob stats` | Knowledge base statistics |
+| `ob check` | Verify connectivity to Supabase + OpenRouter |
+| `ob version` | Print version and config status |
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `OB_SUPABASE_URL` | Yes | — | Supabase project URL |
+| `OB_SUPABASE_KEY` | Yes | — | Supabase service role key |
+| `OB_OPENROUTER_KEY` | Yes | — | OpenRouter API key |
+| `OB_THRESHOLD` | No | `0.7` | Similarity threshold for search |
+| `OB_COUNT` | No | `10` | Default result count |
+
+## GUI Clients (Optional)
+
+If you also use GUI-based AI tools (Claude Desktop, ChatGPT, Cursor), you can deploy the MCP server alongside the CLI. Both paths read and write the same `thoughts` table. See the [Full Setup Guide](docs/01-getting-started.md) for MCP deployment.
 
 ## Documentation
 
-| Document | Audience | What It Covers |
-| -------- | -------- | -------------- |
-| [Quick Start Guide](docs/QUICKSTART.md) | Users | 10-step guided tutorial — first captures, searches, and quick wins |
-| [User Guide](docs/USER_GUIDE.md) | Users | Complete guide with 10 use cases, tips, and troubleshooting |
-| [Architecture](docs/ARCHITECTURE.md) | Developers | System design, ASCII diagrams, data flows, security boundaries |
-| [Developer Guide](docs/DEVELOPER_GUIDE.md) | Developers | Build extensions, recipes, and integrations — with C/Java comparisons |
-| [API Reference](docs/API_REFERENCE.md) | Developers | All 35+ MCP tools, database schemas, authentication, environment variables |
-| [Study Plan](docs/STUDY_PLAN.md) | Learners | Zero-to-hero learning path in 13 phases — theory and hands-on combined |
-| [Setup Guide](docs/01-getting-started.md) | Everyone | Full system build from scratch in 45 minutes |
-| [Companion Prompts](docs/02-companion-prompts.md) | Users | Memory migration, use case discovery, weekly review ritual |
-| [FAQ](docs/03-faq.md) | Everyone | Common issues, architecture questions, community tips |
-| [AI-Assisted Setup](docs/04-ai-assisted-setup.md) | Everyone | Build with Cursor, Claude Code, or other AI coding tools |
-| [CLI-Direct Approach](docs/CLI_DIRECT_APPROACH.md) | Developers | Use Open Brain from terminal AI tools without MCP — includes the `ob` CLI |
+| Document | What It Covers |
+| -------- | -------------- |
+| [CLI Reference](resources/ob-cli/README.md) | Full `ob` CLI documentation |
+| [CLI Architecture](docs/CLI_DIRECT_APPROACH.md) | CLI-Direct architecture, AI tool configuration |
+| [Quick Start Guide](docs/QUICKSTART.md) | First 10 wins with your Open Brain |
+| [User Guide](docs/USER_GUIDE.md) | Use cases, tips, and troubleshooting |
+| [API Reference](docs/API_REFERENCE.md) | `ob` CLI reference, MCP tools, database schemas |
+| [Architecture](docs/ARCHITECTURE.md) | System design, data flows, security boundaries |
+| [Developer Guide](docs/DEVELOPER_GUIDE.md) | Build extensions, recipes, and integrations |
+| [Setup Guide](docs/01-getting-started.md) | Full system build with MCP (for GUI clients) |
+| [Companion Prompts](docs/02-companion-prompts.md) | Memory migration, use case discovery, weekly review |
+| [FAQ](docs/03-faq.md) | Common issues and architecture questions |
 
-## Extensions — The Learning Path
+## Extensions
 
-https://github.com/user-attachments/assets/cc477f00-bb6b-4f96-9f7d-a6bcd0cf8b60
-
-Build these in order. Each one teaches new concepts through something you'll actually use. By the end, your agent manages your household, your schedule, your meals, your professional network, and your career — all interconnected.
+Build these in order. Each one adds a new capability to your Open Brain. Extensions use their own MCP servers for GUI clients, but all read from the same Supabase database.
 
 | # | Extension | What You Build | Difficulty |
 | --- | --------- | -------------- | ---------- |
@@ -60,79 +128,21 @@ Build these in order. Each one teaches new concepts through something you'll act
 | 5 | [Professional CRM](extensions/professional-crm/) | Contact tracking wired into your thoughts | Intermediate |
 | 6 | [Job Hunt Pipeline](extensions/job-hunt/) | Application tracking and interview pipeline | Advanced |
 
-Extensions compound. Your CRM knows about thoughts you've captured. Your meal planner checks who's home this week. Your job hunt contacts automatically become professional network contacts. This is what happens when your agent can see across your whole system.
-
-## Primitives: Concepts That Compound
-
-https://github.com/user-attachments/assets/f488e495-fe2a-4ccc-a834-fc6ab5a0ed41
-
-Some concepts show up in multiple extensions. Learn them once, apply them everywhere.
-
-| Primitive | What It Teaches | Used By |
-| --------- | --------------- | ------- |
-| [Row Level Security](primitives/rls/) | PostgreSQL policies for multi-user data isolation | Extensions 4, 5, 6 |
-| [Shared MCP Server](primitives/shared-mcp/) | Giving others scoped access to parts of your brain | Extension 4 |
-
 ## Community Contributions
 
-https://github.com/user-attachments/assets/9454662f-2648-4928-8723-f7d52e94e9b8
+| Directory | What's Inside | Status |
+|---|---|---|
+| [`/recipes`](recipes/) | Step-by-step capability builds (email import, ChatGPT import, daily digest) | Open |
+| [`/schemas`](schemas/) | Database table extensions (CRM contacts, preferences, reading list) | Open |
+| [`/dashboards`](dashboards/) | Frontend templates for Vercel/Netlify | Open |
+| [`/integrations`](integrations/) | Capture sources and webhook receivers | Open |
+| [`/primitives`](primitives/) | Reusable concepts (RLS, shared MCP server) | Curated |
 
-Beyond the curated learning path, the community builds and shares:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 
-### [`/recipes`](recipes/) — Step-by-step builds
+## Credits
 
-Each recipe teaches you how to add a new capability to your Open Brain. Follow the instructions, run the code, get a new feature.
-- Email history import (pull your Gmail archive into searchable thoughts)
-- ChatGPT conversation import (ingest your ChatGPT data export)
-- Daily digest generator (automated summary of recent thoughts via email or Slack)
-
-### [`/schemas`](schemas/) — Database extensions
-
-New tables, metadata schemas, and column extensions for your Supabase database. Drop them in alongside your existing `thoughts` table.
-- CRM contact layer (track people, interactions, and relationship context)
-- Taste preferences tracker
-- Reading list with rating metadata
-
-### [`/dashboards`](dashboards/) — Frontend templates
-
-Host these on Vercel or Netlify, pointed at your Supabase backend. Instant UI for your brain.
-- Personal knowledge dashboard
-- Weekly review view
-- Mobile-friendly capture UI
-
-### [`/integrations`](integrations/) — New connections
-
-MCP server extensions, webhook receivers, and capture sources beyond Slack.
-- Discord capture bot
-- Email forwarding handler
-- Browser extension connector
-
-## Using a Contribution
-
-1. Browse the category folders above
-2. Find what you want and open its folder
-3. Read the README — it has prerequisites, step-by-step instructions, and troubleshooting
-4. Most contributions involve running SQL against your Supabase database, deploying an edge function, or hosting frontend code. The README will tell you exactly what to do.
-
-## Contributing
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for the full details. The short version:
-
-- **Extensions** are curated — discuss with maintainers before submitting
-- **Primitives** should be referenced by 2+ extensions to justify extraction
-- **Recipes, schemas, dashboards, integrations** are open for community contributions
-- Every PR runs through an automated review agent that checks 11 rules (file structure, no secrets, SQL safety, primitive dependencies, etc.)
-- If the agent passes, a human admin reviews for quality and clarity
-- Your contribution needs a README with real instructions and a `metadata.json` with structured info
-
-## Community
-
-- **[Discord](https://discord.gg/Cgh9WJEkeG)** — Real-time help, show-and-tell, contributor discussion
-- **[Substack](https://natesnewsletter.substack.com/)** — Updates, deep dives, and the story behind Open Brain
-
-## Who Maintains This
-
-Built by Nate B. Jones's team. Matt Hallett is the first community admin and repo manager. PRs are reviewed by the automated agent + human admins.
+Open Brain was originally created by [Nate B. Jones](https://natesnewsletter.substack.com/). This CLI edition is maintained by [az9713](https://github.com/az9713).
 
 ## License
 

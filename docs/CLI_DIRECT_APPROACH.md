@@ -1167,6 +1167,8 @@ consistently takes more than 5 seconds:
 > [`resources/ob-cli/ob`](../resources/ob-cli/ob). The version below is kept
 > for reference — use the file in `resources/ob-cli/` for installation.
 
+> **Note:** The script below reflects v1.1.0 with bug fixes, `delete` and `check` commands, HTTP status checking, and `source: "ob-cli"` metadata tagging. See [`resources/ob-cli/ob`](../resources/ob-cli/ob) for the canonical version.
+
 Copy this entire script to `~/.local/bin/ob` and run `chmod +x ~/.local/bin/ob`.
 
 ```bash

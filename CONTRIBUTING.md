@@ -159,7 +159,7 @@ Example for an extension:
 - Requires paid services with no free-tier alternative
 - Poorly documented (missing README sections, unclear instructions)
 - Duplicates an existing contribution without meaningful improvement
-- Modifies core Open Brain infrastructure (the `thoughts` table structure, the core MCP server) — that's upstream, not here
+- Modifies core Open Brain infrastructure (the `thoughts` table structure, the core MCP server)
 
 ## Contributor Ladder
 

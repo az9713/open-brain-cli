@@ -6,7 +6,8 @@ Complete reference for the Open Brain MCP Tools API, extension MCP servers, data
 
 ## Table of Contents
 
-1. [Core MCP Tools API](#1-core-mcp-tools-api)
+0. [`ob` CLI Reference](#0-ob-cli-reference)
+1. [Core MCP Tools API (GUI Clients)](#1-core-mcp-tools-api-gui-clients)
 2. [Extension MCP Tools](#2-extension-mcp-tools)
 3. [Database Schema Reference](#3-database-schema-reference)
 4. [Authentication and Access](#4-authentication-and-access)
@@ -17,7 +18,97 @@ Complete reference for the Open Brain MCP Tools API, extension MCP servers, data
 
 ---
 
-## 1. Core MCP Tools API
+## 0. `ob` CLI Reference
+
+The `ob` CLI provides direct access to the Open Brain `thoughts` table from any terminal. It uses `curl` and `jq` to call the Supabase REST API and OpenRouter — no MCP server or Edge Function required. Source: [`resources/ob-cli/ob`](../resources/ob-cli/ob).
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `OB_SUPABASE_URL` | Yes | — | Supabase project URL |
+| `OB_SUPABASE_KEY` | Yes | — | Supabase service role key |
+| `OB_OPENROUTER_KEY` | Yes | — | OpenRouter API key |
+| `OB_THRESHOLD` | No | `0.7` | Default similarity threshold for search |
+| `OB_COUNT` | No | `10` | Default result count |
+
+### Commands
+
+#### `ob capture "text"`
+
+Generates an embedding via OpenRouter, extracts metadata via gpt-4o-mini, and inserts a row into the `thoughts` table. Adds `"source": "ob-cli"` to metadata automatically.
+
+```bash
+ob capture "Sarah mentioned she's thinking about leaving her job"
+```
+
+**Output:** JSON with `success`, `id`, `content`, `metadata`, `created_at`.
+
+**Exit code:** `0` on success, `1` on failure (with error message to stderr).
+
+#### `ob search "query" [--threshold N] [--count N] [--json]`
+
+Generates an embedding of the query and calls the `match_thoughts()` RPC function for vector similarity search.
+
+```bash
+ob search "career changes"
+ob search "career changes" --threshold 0.5 --count 20
+ob search "career changes" --json
+```
+
+**Flags:**
+- `--threshold N` — Minimum similarity (default: `0.7`)
+- `--count N` — Max results (default: `10`)
+- `--json` — Raw JSON output instead of formatted text
+
+**Output:** Formatted list with similarity percentage, content, topics, people, type, and timestamp. Or raw JSON with `--json`.
+
+#### `ob recent [count]`
+
+Lists the most recent thoughts via the Supabase REST API, ordered by `created_at desc`.
+
+```bash
+ob recent      # default 10
+ob recent 5
+```
+
+#### `ob delete <thought-id>`
+
+Deletes a thought by UUID.
+
+```bash
+ob delete "550e8400-e29b-41d4-a716-446655440000"
+```
+
+**Exit code:** `0` if deleted, `1` if not found.
+
+#### `ob stats`
+
+Shows total thought count, date range, top topics, top people, and type distribution. Fetches up to 10,000 rows for aggregation; the total count uses PostgREST's `Content-Range` header for accuracy.
+
+```bash
+ob stats
+```
+
+#### `ob check`
+
+Verifies that all environment variables are set and tests connectivity to both Supabase and OpenRouter. Safe to run without configured credentials (shows what's missing).
+
+```bash
+ob check
+```
+
+#### `ob version`
+
+Prints version number and configuration status.
+
+```bash
+ob version
+```
+
+---
+
+## 1. Core MCP Tools API (GUI Clients)
 
 The core MCP server is deployed as a Supabase Edge Function. It provides four tools that give any MCP-connected AI client the ability to read and write to the `thoughts` table.
 

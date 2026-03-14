@@ -173,7 +173,7 @@ Any problem in your life that involves scattered information, events spread over
 
 ## The Build Kit: Six Extensions You Build in Order
 
-The principles are worth nothing without implementation. The [OB1 repository on GitHub](https://github.com/NateBJones-Projects/OB1) contains six extensions, one for each use case, designed to be built in order. Each one teaches new concepts through something you will actually use — and they compound, because your CRM knows about thoughts you have captured, your meal planner checks who is home this week, and your job hunt contacts automatically become professional network entries.
+The principles are worth nothing without implementation. The [open-brain-cli repository on GitHub](https://github.com/az9713/open-brain-cli) contains six extensions, one for each use case, designed to be built in order. Each one teaches new concepts through something you will actually use — and they compound, because your CRM knows about thoughts you have captured, your meal planner checks who is home this week, and your job hunt contacts automatically become professional network entries.
 
 | # | Extension | What You Build | Difficulty |
 |---|-----------|----------------|------------|

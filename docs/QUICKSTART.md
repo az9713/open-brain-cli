@@ -13,10 +13,10 @@ Your Open Brain is set up and connected. Now let's make sure it works — and ge
 Before you start, confirm you have:
 
 - A Supabase project with the `thoughts` table created
-- Your MCP server deployed and running
-- An AI client (Claude Desktop, ChatGPT, or similar) connected to your Open Brain via MCP
+- **Either:** Your MCP server deployed and an AI client connected via MCP (Claude Desktop, ChatGPT, Cursor)
+- **Or:** The [`ob` CLI tool](../resources/ob-cli/) installed and configured with your env vars
 
-If any of those are not in place, the [Setup Guide](01-getting-started.md) covers each one step by step.
+If neither is in place, the [Setup Guide](01-getting-started.md) covers MCP setup step by step, or use the [CLI-Direct Approach](CLI_DIRECT_APPROACH.md) for a faster terminal-only setup.
 
 ---
 
@@ -32,6 +32,11 @@ Open your connected AI and type exactly this:
 
 ```
 Remember this: Sarah mentioned she's thinking about leaving her job to start a consulting business
+```
+
+**CLI alternative:**
+```bash
+ob capture "Sarah mentioned she's thinking about leaving her job to start a consulting business"
 ```
 
 **What to expect:** Your AI confirms the save and shows extracted metadata — something like: type "person_note," people ["Sarah"], topics ["career," "consulting"], action items [].
@@ -58,6 +63,11 @@ Back in your AI, type:
 What did I capture about career changes?
 ```
 
+**CLI alternative:**
+```bash
+ob search "career changes"
+```
+
 **What to expect:** Your AI retrieves the Sarah thought — even though the words "career changes" never appeared in what you typed. You searched by meaning, not keywords.
 
 **Why this is the key feature:** This is semantic search. It is what makes Open Brain different from a notes app. You will not always remember the exact words you used when you captured something. Semantic search finds it by meaning anyway.
@@ -72,6 +82,11 @@ Type this (replace the specifics if you prefer something from your own work):
 Meeting with design team about the dashboard redesign. Decided to cut the sidebar panels, keep the revenue chart, and add a trend line. Action: I send them the API spec by Thursday. Action: they send revised mockups by Monday.
 ```
 
+**CLI alternative:**
+```bash
+ob capture "Meeting with design team about the dashboard redesign. Decided to cut the sidebar panels, keep the revenue chart, and add a trend line. Action: I send them the API spec by Thursday. Action: they send revised mockups by Monday."
+```
+
 **What to expect:** Your AI confirms the save. The metadata should extract: multiple action items (send API spec, send mockups), people involved, and topics (dashboard, redesign).
 
 **Why this format works:** Meeting notes with decisions and action items are the highest-value things you can save. They are dense with searchable meaning and they capture things that would otherwise fade within a day.
@@ -84,6 +99,11 @@ Type this (again, feel free to use someone from your own work):
 
 ```
 Marcus — mentioned he's overwhelmed since the reorg. Wants to move to the platform team. His wife just had a baby.
+```
+
+**CLI alternative:**
+```bash
+ob capture "Marcus — mentioned he's overwhelmed since the reorg. Wants to move to the platform team. His wife just had a baby."
 ```
 
 **What to expect:** Your AI saves this and tags it as a person note with Marcus extracted as the key person.
@@ -108,6 +128,12 @@ Now try a more specific search:
 What action items do I have outstanding?
 ```
 
+**CLI alternative:**
+```bash
+ob search "people and their career situations"
+ob search "action items"
+```
+
 **What to expect:** Your AI should surface the action items from the meeting note — send the API spec, send mockups — with context about when they were captured.
 
 ---
@@ -118,6 +144,11 @@ Type this:
 
 ```
 How many thoughts do I have in my Open Brain? Give me an overview.
+```
+
+**CLI alternative:**
+```bash
+ob stats
 ```
 
 **What to expect:** Your AI calls the stats tool and returns a count of your thoughts, when the first one was captured, and possibly a breakdown by type (person notes, meeting notes, insights, etc.).

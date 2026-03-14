@@ -17,4 +17,4 @@ You don't need to read primitives in advance. Each extension tells you when to r
 
 ## Contributing
 
-Primitives are **curated** — a primitive should be referenced by at least 2 extensions to justify extraction. [Propose a new primitive](https://github.com/NateBJones-Projects/OB1/issues/new?template=primitive-submission.yml).
+Primitives are **curated** — a primitive should be referenced by at least 2 extensions to justify extraction. [Propose a new primitive](https://github.com/az9713/open-brain-cli/issues/new?template=primitive-submission.yml).

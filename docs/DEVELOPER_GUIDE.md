@@ -335,8 +335,8 @@ If you are coming from Subversion (SVN): Git is distributed, meaning every devel
 
 ```bash
 # Clone the repository to your local machine
-git clone https://github.com/NateBJones-Projects/OB1.git
-cd OB1
+git clone https://github.com/az9713/open-brain-cli.git
+cd open-brain-cli
 
 # Create a branch for your contribution
 # Branch naming convention: contrib/<your-github-username>/<short-description>
@@ -701,8 +701,8 @@ supabase --version
 ### Step 4: Clone the Repository
 
 ```bash
-git clone https://github.com/NateBJones-Projects/OB1.git
-cd OB1
+git clone https://github.com/az9713/open-brain-cli.git
+cd open-brain-cli
 ```
 
 ### Step 5: Set Up a Working Open Brain Instance
