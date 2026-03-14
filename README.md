@@ -1,4 +1,9 @@
 <p align="center">
+  <strong>CLI edition of <a href="https://github.com/NateBJones-Projects/OB1">Open Brain (OB1)</a> — the personal AI memory system by Nate B. Jones.</strong><br>
+  This repo adds a lightweight CLI tool (<code>ob</code>) for terminal-first workflows and strips the MCP requirement for core usage.
+</p>
+
+<p align="center">
   <img src=".github/ob1-logo-wide.png" alt="Open Brain CLI" width="600">
 </p>
 
