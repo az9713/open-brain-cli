@@ -80,6 +80,49 @@ ob check
 | `OB_THRESHOLD` | No | `0.7` | Similarity threshold for search |
 | `OB_COUNT` | No | `10` | Default result count |
 
+## Using with AI Tools (Claude Code, Codex, Gemini CLI)
+
+This repo includes 6 skills that let AI tools use Open Brain via natural language — no need to memorize CLI commands.
+
+### What You Can Say
+
+| Instead of... | Just say... | Skill |
+|---|---|---|
+| `ob capture "Sarah mentioned..."` | "Remember this: Sarah mentioned she's thinking about starting a consulting business" | ob-capture |
+| `ob search "career changes"` | "What do I know about career changes?" | ob-recall |
+| `ob stats` + `ob recent 50` | "Give me a weekly review of my brain" | ob-review |
+| `ob check` + `ob stats` | "Is my Open Brain working?" | ob-status |
+| (manual process) | "Import my notes from Notion into Open Brain" | ob-migrate |
+| `ob search` + `ob delete` | "Find and remove duplicate thoughts" | ob-cleanup |
+
+### More Examples
+
+**Capturing naturally:**
+- "Save this: met with design team, decided to cut sidebar panels, API spec due Thursday"
+- "Don't forget — Marcus wants to move to the platform team"
+- "Note: the living room paint is Sherwin Williams Sea Salt SW 6204"
+
+**Recalling by meaning:**
+- "What did I capture about the API redesign?"
+- "What do I know about Marcus?"
+- "Find my notes on dashboard decisions"
+
+**Reviews and synthesis:**
+- "What action items do I have open?"
+- "What themes have I been thinking about this week?"
+- "Give me a monthly review"
+
+**Maintenance:**
+- "That last capture was wrong — fix it"
+- "Clean up my brain — find any duplicates"
+- "Delete the test thought I captured earlier"
+
+### How Skills Work
+
+Skills are loaded automatically when you clone this repo and open it in Claude Code. When you say something like "remember this meeting note," Claude reads the `ob-capture` skill and translates your request into the right `ob` CLI commands with proper formatting for good metadata extraction.
+
+The skills live in `.claude/skills/` — you can read or customize them.
+
 ## GUI Clients (Optional)
 
 If you also use GUI-based AI tools (Claude Desktop, ChatGPT, Cursor), you can deploy an MCP server alongside the CLI. Both paths read and write the same `thoughts` table. See the [original Open Brain repo](https://github.com/NateBJones-Projects/OB1) for MCP deployment instructions.

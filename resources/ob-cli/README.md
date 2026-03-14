@@ -85,6 +85,19 @@ ob recent 5
 
 Thoughts captured via the `ob` CLI include `"source": "ob-cli"` in their metadata, so you can distinguish them from MCP-captured thoughts.
 
+## Natural Language Usage (AI Tools)
+
+If you use Claude Code, Codex, or Gemini CLI, you don't need to type `ob` commands directly. This repo includes 6 skills in `.claude/skills/` that translate natural language into `ob` commands:
+
+- **"Remember this: Sarah is thinking about consulting"** → `ob capture "Sarah — thinking about leaving job to start consulting business"`
+- **"What do I know about the API redesign?"** → `ob search "API redesign decisions"`
+- **"Weekly review"** → `ob recent 50` + `ob stats` + targeted searches + synthesis
+- **"Is my brain working?"** → `ob check` + `ob stats`
+- **"Import my Notion notes"** → structured chunking + batch `ob capture`
+- **"Find duplicates"** → `ob search` with high threshold + `ob delete`
+
+Skills load automatically when you open the repo in Claude Code.
+
 ## More Information
 
 See [docs/CLI_DIRECT_APPROACH.md](../../docs/CLI_DIRECT_APPROACH.md) for full architecture context, CLI AI tool configuration, troubleshooting, and the comparison between MCP and CLI-Direct approaches.

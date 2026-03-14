@@ -260,6 +260,21 @@ See the full [CLI Reference](../resources/ob-cli/README.md) for details on flags
 
 ---
 
+## Using with AI Tools (Natural Language)
+
+If you use Claude Code, Codex, or Gemini CLI, you don't need to memorize the `ob` commands. This repo includes skills that let your AI tool use Open Brain via natural language:
+
+| Instead of typing... | Just say... |
+|---|---|
+| `ob capture "Sarah mentioned..."` | "Remember this: Sarah mentioned she's thinking about consulting" |
+| `ob search "career changes"` | "What do I know about career changes?" |
+| `ob stats` | "How's my brain looking?" |
+| `ob recent 20` + analysis | "Give me a weekly review" |
+
+The skills are in `.claude/skills/` and load automatically when you open this repo in Claude Code. See the [README](../README.md#using-with-ai-tools-claude-code-codex-gemini-cli) for the full list of examples.
+
+---
+
 ## What to Do Next
 
 - **[Quick Start Guide](QUICKSTART.md)** — 10 quick wins to build the capture habit

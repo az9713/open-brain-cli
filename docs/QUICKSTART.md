@@ -4,6 +4,8 @@ Your Open Brain is set up and connected. Now let's make sure it works — and ge
 
 > **Not set up yet?** Start with the [Setup Guide](01-getting-started.md) — it takes about 10 minutes.
 
+> **Using Claude Code?** You can follow this guide using natural language instead of CLI commands. The repo includes skills that translate phrases like "remember this" and "what do I know about X" into `ob` commands automatically. Just open this repo in Claude Code and talk naturally.
+
 ---
 
 ## Prerequisites
