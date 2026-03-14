@@ -51,7 +51,14 @@ mkdir -p ~/.local/bin
 cp open-brain-cli/resources/ob-cli/ob ~/.local/bin/ob
 chmod +x ~/.local/bin/ob
 
-# Set env vars (add to ~/.bashrc or ~/.zshrc)
+# Set env vars — choose one method:
+
+# Option A: Copy .env.example and fill in your values
+cp open-brain-cli/.env.example ~/.ob.env
+# Edit ~/.ob.env with your actual keys, then:
+export OB_ENV_FILE="$HOME/.ob.env"  # add to ~/.bashrc or ~/.zshrc
+
+# Option B: Export directly (add to ~/.bashrc or ~/.zshrc)
 export OB_SUPABASE_URL="https://your-project-ref.supabase.co"
 export OB_SUPABASE_KEY="your-service-role-key"
 export OB_OPENROUTER_KEY="your-openrouter-key"
@@ -74,6 +81,8 @@ ob check
 
 ### Environment Variables
 
+The `ob` CLI automatically loads a `.env` file from the current directory if one exists. You can also point to a specific file with `OB_ENV_FILE`. Shell exports take precedence over `.env` values.
+
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `OB_SUPABASE_URL` | Yes | — | Supabase project URL |
@@ -81,6 +90,7 @@ ob check
 | `OB_OPENROUTER_KEY` | Yes | — | OpenRouter API key |
 | `OB_THRESHOLD` | No | `0.7` | Similarity threshold for search |
 | `OB_COUNT` | No | `10` | Default result count |
+| `OB_ENV_FILE` | No | `.env` | Path to environment file |
 
 ## Using with AI Tools (Claude Code, Codex, Gemini CLI)
 

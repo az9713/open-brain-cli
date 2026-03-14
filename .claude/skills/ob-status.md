@@ -21,7 +21,7 @@ This verifies:
 - OpenRouter is reachable (HTTP 200)
 
 If anything fails, tell the user exactly what's wrong and how to fix it:
-- Missing env vars → add to `~/.bashrc` or `~/.zshrc`, then `source` it
+- Missing env vars → copy `.env.example` to `.env` and set `OB_ENV_FILE`, or add exports to `~/.bashrc` / `~/.zshrc` and `source` it
 - Supabase fails → check the URL (should be `https://your-ref.supabase.co`) and key
 - OpenRouter fails → check the key at openrouter.ai/keys, verify credits remain
 
@@ -54,7 +54,7 @@ If the user says something like "let me save this to my brain" or "search my Ope
 
 | Symptom | Likely Cause | Fix |
 |---------|-------------|-----|
-| "OB_SUPABASE_URL is not set" | Env vars not loaded | `source ~/.bashrc` or add exports |
+| "OB_SUPABASE_URL is not set" | Env vars not loaded | Copy `.env.example` to `.env` and fill in your keys, or `source ~/.bashrc` if using exports |
 | Supabase HTTP 401 | Wrong key | Use the Secret/service role key, not the anon key |
 | OpenRouter HTTP 401 | Invalid API key | Regenerate at openrouter.ai/keys |
 | OpenRouter HTTP 402 | No credits | Add credits at openrouter.ai |

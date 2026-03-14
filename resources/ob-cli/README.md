@@ -23,7 +23,20 @@ export PATH="$HOME/.local/bin:$PATH"
 
 ## Configuration
 
-Set these environment variables (in `~/.bashrc`, `~/.zshrc`, or `~/.profile`):
+The `ob` CLI automatically loads a `.env` file from the current directory if one exists. You can also point to a custom location with `OB_ENV_FILE`, or export variables directly in your shell profile.
+
+**Option A: Use a `.env` file** (recommended)
+
+```bash
+# Copy the template from the repo root
+cp .env.example ~/.ob.env
+# Edit ~/.ob.env with your actual keys
+
+# Tell ob where to find it (add to ~/.bashrc or ~/.zshrc)
+export OB_ENV_FILE="$HOME/.ob.env"
+```
+
+**Option B: Export directly** (in `~/.bashrc`, `~/.zshrc`, or `~/.profile`)
 
 ```bash
 export OB_SUPABASE_URL="https://your-project-ref.supabase.co"
@@ -31,12 +44,15 @@ export OB_SUPABASE_KEY="your-service-role-key"
 export OB_OPENROUTER_KEY="your-openrouter-key"
 ```
 
-Optional:
+Shell exports always take precedence over `.env` values.
+
+### Optional Variables
 
 | Variable | Default | Description |
 |---|---|---|
 | `OB_THRESHOLD` | `0.7` | Similarity threshold for search |
 | `OB_COUNT` | `10` | Default result count |
+| `OB_ENV_FILE` | `.env` | Path to environment file |
 
 ## Commands
 

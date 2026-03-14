@@ -13,7 +13,7 @@ The reason formatting matters: the metadata extractor (gpt-4o-mini) produces bet
 
 ## Before First Capture
 
-Run `ob check` once per session to verify connectivity. If it fails, the user needs to set `OB_SUPABASE_URL`, `OB_SUPABASE_KEY`, and `OB_OPENROUTER_KEY`. Point them to `docs/01-getting-started.md`.
+Run `ob check` once per session to verify connectivity. If it fails, the user needs to set `OB_SUPABASE_URL`, `OB_SUPABASE_KEY`, and `OB_OPENROUTER_KEY` — either via a `.env` file (copy `.env.example` from repo root and set `OB_ENV_FILE`) or shell exports. Point them to `docs/01-getting-started.md`.
 
 ## How to Format Thoughts
 

@@ -11,6 +11,15 @@ set -euo pipefail
 
 OB_VERSION="1.1.0"
 
+# ─── Load .env if present ─────────────────────────────────────────────────────
+
+if [[ -f "${OB_ENV_FILE:-.env}" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "${OB_ENV_FILE:-.env}"
+  set +a
+fi
+
 # ─── Configuration ────────────────────────────────────────────────────────────
 
 : "${OB_SUPABASE_URL:=}"
@@ -379,12 +388,13 @@ main() {
       echo "  ob check                          Verify connectivity to Supabase + OpenRouter"
       echo "  ob version                        Print version and config status"
       echo ""
-      echo "Environment variables:"
+      echo "Environment variables (set via .env file, shell export, or OB_ENV_FILE):"
       echo "  OB_SUPABASE_URL    Supabase project URL (required)"
       echo "  OB_SUPABASE_KEY    Supabase service role key (required)"
       echo "  OB_OPENROUTER_KEY  OpenRouter API key (required)"
       echo "  OB_THRESHOLD       Default similarity threshold (default: 0.7)"
       echo "  OB_COUNT           Default result count (default: 10)"
+      echo "  OB_ENV_FILE        Path to .env file (default: .env in current directory)"
       ;;
     *)
       die "Unknown command: $cmd (run 'ob help' for usage)"

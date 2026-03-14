@@ -203,6 +203,20 @@ export PATH="$HOME/.local/bin:$PATH"
 
 ### Set Environment Variables
 
+**Option A: Use `.env.example`** (recommended)
+
+```bash
+cp open-brain-cli/.env.example ~/.ob.env
+```
+
+Edit `~/.ob.env` with your actual values from Steps 2–3, then add to your `~/.bashrc` or `~/.zshrc`:
+
+```bash
+export OB_ENV_FILE="$HOME/.ob.env"
+```
+
+**Option B: Export directly**
+
 Add to your `~/.bashrc`, `~/.zshrc`, or `~/.profile`:
 
 ```bash
@@ -216,6 +230,8 @@ Reload your shell:
 ```bash
 source ~/.bashrc   # or ~/.zshrc
 ```
+
+> **Note:** The `ob` CLI also auto-loads a `.env` file from the current directory if one exists. Shell exports always take precedence over `.env` values.
 
 ---
 

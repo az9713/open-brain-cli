@@ -23,6 +23,51 @@ resources/      — Claude Skill, companion files, ob CLI tool.
 
 Every contribution in recipes/schemas/dashboards/integrations/extensions/primitives must live in its own subfolder and include `README.md` + `metadata.json`.
 
+## Environment Setup
+
+Required environment variables (see `.env.example` template):
+
+```
+OB_SUPABASE_URL    — Supabase project URL
+OB_SUPABASE_KEY    — Supabase service role key
+OB_OPENROUTER_KEY  — OpenRouter API key
+```
+
+Optional: `OB_THRESHOLD` (default 0.7), `OB_COUNT` (default 10).
+
+## Common Commands
+
+```bash
+# Verify connectivity
+ob check
+
+# Test the CLI
+ob capture "test thought"
+ob search "test"
+ob recent 5
+ob stats
+ob delete <thought-id>
+
+# Validate a contribution's metadata.json against schema
+# (no build system — this is a docs/scripts repo, not an app)
+```
+
+There is no build step, test runner, or linter for the repo itself. The `ob` CLI (`resources/ob-cli/ob`) is a standalone bash script with only `curl` and `jq` as dependencies. Validate changes by running `ob check` and testing commands manually.
+
+GitHub Actions run `markdown-lint` on PRs (`.github/workflows/markdown-lint.yml`).
+
+## Claude Skills
+
+Seven skills in `.claude/skills/` let Claude translate natural language into `ob` CLI commands:
+
+- `ob-capture` — "Remember this: ..." → `ob capture`
+- `ob-recall` — "What do I know about ...?" → `ob search`
+- `ob-review` — "Give me a weekly review" → `ob stats` + `ob recent`
+- `ob-status` — "Is my Open Brain working?" → `ob check` + `ob stats`
+- `ob-migrate` — "Import my notes from ..." → bulk `ob capture`
+- `ob-cleanup` — "Find duplicates" → `ob search` + `ob delete`
+- `review-pr` — Automated PR review against contribution rules
+
 ## Guard Rails
 
 - **Never modify the core `thoughts` table structure.** Adding columns is fine; altering or dropping existing ones is not.

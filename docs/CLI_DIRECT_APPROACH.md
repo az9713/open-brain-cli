@@ -786,8 +786,14 @@ All environment variables use the `OB_` prefix to avoid collisions with other to
 
 **Where to set them:**
 
+The `ob` CLI auto-loads a `.env` file from the current directory if one exists. You can also point to a custom file with `OB_ENV_FILE`. Shell exports always take precedence.
+
 ```bash
-# In ~/.bashrc, ~/.zshrc, or ~/.profile
+# Option A: Use a .env file (recommended)
+cp .env.example ~/.ob.env     # copy template from repo root, fill in your keys
+export OB_ENV_FILE="$HOME/.ob.env"  # add to ~/.bashrc or ~/.zshrc
+
+# Option B: Export directly in ~/.bashrc, ~/.zshrc, or ~/.profile
 export OB_SUPABASE_URL="https://your-project-ref.supabase.co"
 export OB_SUPABASE_KEY="eyJhbGciOiJIUzI1NiIs..."
 export OB_OPENROUTER_KEY="sk-or-v1-..."
@@ -795,7 +801,8 @@ export OB_OPENROUTER_KEY="sk-or-v1-..."
 
 **Security note:** The `OB_SUPABASE_KEY` is the service role key, which has full
 database access. Do not commit it to any repository. Do not share it. If it leaks,
-rotate it immediately in the Supabase dashboard under Settings → API.
+rotate it immediately in the Supabase dashboard under Settings → API. The `.env`
+file is gitignored by default to prevent accidental commits.
 
 ### 7.3 Implementation: Bash Script
 
@@ -843,7 +850,11 @@ export PATH="$HOME/.local/bin:$PATH"
 **Step 3 — Set environment variables:**
 
 ```bash
-# Add to ~/.bashrc or ~/.zshrc
+# Option A: Use .env.example (recommended)
+cp .env.example ~/.ob.env   # fill in your keys
+export OB_ENV_FILE="$HOME/.ob.env"  # add to ~/.bashrc or ~/.zshrc
+
+# Option B: Export directly (add to ~/.bashrc or ~/.zshrc)
 export OB_SUPABASE_URL="https://your-project-ref.supabase.co"
 export OB_SUPABASE_KEY="your-service-role-key"
 export OB_OPENROUTER_KEY="your-openrouter-key"

@@ -24,6 +24,8 @@ The `ob` CLI provides direct access to the Open Brain `thoughts` table from any 
 
 ### Environment Variables
 
+The `ob` CLI auto-loads a `.env` file from the current directory (or from the path in `OB_ENV_FILE`). Shell exports take precedence over `.env` values.
+
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `OB_SUPABASE_URL` | Yes | — | Supabase project URL |
@@ -31,6 +33,7 @@ The `ob` CLI provides direct access to the Open Brain `thoughts` table from any 
 | `OB_OPENROUTER_KEY` | Yes | — | OpenRouter API key |
 | `OB_THRESHOLD` | No | `0.7` | Default similarity threshold for search |
 | `OB_COUNT` | No | `10` | Default result count |
+| `OB_ENV_FILE` | No | `.env` | Path to environment file |
 
 ### Commands
 
