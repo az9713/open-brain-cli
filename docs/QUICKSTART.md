@@ -222,4 +222,4 @@ Good luck. The system is yours now.
 
 ---
 
-*Built by Nate B. Jones — companion to [Build Your Open Brain](01-getting-started.md).*
+*Originally created by Nate B. Jones. CLI edition maintained at [github.com/az9713/open-brain-cli](https://github.com/az9713/open-brain-cli).*

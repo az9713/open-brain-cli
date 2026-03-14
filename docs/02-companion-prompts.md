@@ -459,4 +459,4 @@ Your Open Brain is infrastructure. These prompts are the habits that make it com
 
 ---
 
-*Built by [Nate B. Jones](https://natesnewsletter.substack.com/) — companion to [Build Your Open Brain](01-getting-started.md).*
+*Originally created by [Nate B. Jones](https://natesnewsletter.substack.com/). CLI edition maintained at [github.com/az9713/open-brain-cli](https://github.com/az9713/open-brain-cli).*

@@ -334,4 +334,4 @@ This is one of many possible capture interfaces. Your Open Brain MCP server also
 
 ---
 
-*Built by Nate B. Jones — part of the [Open Brain CLI project](https://github.com/az9713/open-brain-cli)*
+*Originally created by Nate B. Jones. Part of the [Open Brain CLI project](https://github.com/az9713/open-brain-cli).*
