@@ -1,126 +1,78 @@
-# Build Your Open Brain
+# Open Brain CLI — Setup Guide
 
-https://github.com/user-attachments/assets/85208d73-112b-4204-82fd-d03b6c397a8b
-
-## Complete Setup Guide
-
----
+Get your Open Brain running in about 10 minutes. You'll set up a database, get an API key, install the `ob` CLI, and verify everything works.
 
 ## What You're Building
 
-A database that stores your thoughts with vector embeddings, connected to any AI tool you already use. GUI clients (Claude Desktop, ChatGPT, Cursor) connect via MCP. Terminal tools (Claude Code, Codex, Gemini CLI) use the lightweight `ob` CLI — no MCP server needed. Either way, capture happens naturally from wherever you're working.
+A database that stores your thoughts with vector embeddings, plus a CLI tool that lets you capture and search from your terminal. Your AI tools (Claude Code, Codex, Gemini CLI) can use `ob` directly — no MCP server needed.
 
-> **Using a terminal-based AI tool (Claude Code, Codex, Gemini CLI)?** You can skip MCP entirely and use the lightweight `ob` CLI instead. See the [CLI-Direct Approach](CLI_DIRECT_APPROACH.md) guide and the [`ob` CLI tool](../resources/ob-cli/). You still need Steps 1–4 below (database + OpenRouter), but you can skip Steps 5–7 (Edge Function and MCP).
+```
+You → ob capture "thought" → OpenRouter (embedding + metadata) → Supabase PostgreSQL
+You → ob search "query"    → OpenRouter (query embedding)      → pgvector similarity search
+```
 
 ## What You Need
 
-About 30 minutes and zero coding experience. You'll copy and paste everything.
+- About 10 minutes
+- A terminal with `curl` and `jq` installed
+- **Windows:** Git Bash, WSL, or similar bash environment
 
 ### Services (All Free Tier)
 
-- **Supabase** — Your database — stores everything
-- **OpenRouter** — Your AI gateway — understands everything
+| Service | What It Does | Cost |
+|---------|-------------|------|
+| [Supabase](https://supabase.com) | Your database — stores everything | $0 (free tier) |
+| [OpenRouter](https://openrouter.ai) | AI gateway — generates embeddings and extracts metadata | ~$0.10–0.30/month |
 
 ### If You Get Stuck
 
-Follow this guide step by step — it's designed to get you through without outside help. If you'd rather have an AI coding tool walk you through it, check out the [AI-Assisted Setup guide](04-ai-assisted-setup.md) — it covers how to use Cursor, Claude Code, or similar tools to build alongside this guide.
-
-If something goes sideways, Supabase has a free built-in AI assistant in every project dashboard. Look for the chat icon in the bottom-right corner. It has access to all of Supabase's documentation and can help with every Supabase-specific step in this guide.
-
-Things it's good at:
-
-- Walking you through where to click when you can't find something in the dashboard
-- Fixing SQL errors if you paste in the error message
-- Explaining terminal commands and what their output means
-- Interpreting Edge Function logs when something isn't working
-- Explaining Supabase concepts in plain English (what's a Secret key / service role key? what does Row Level Security do?)
-
-It can't see your screen or run commands for you, but if you paste what you're seeing, it can tell you what to do next.
-
-## How This Works
-
-You'll set up your database, connect it to an AI gateway for embeddings, then deploy an MCP server that gives any AI assistant the ability to search and write to your brain. One progressive setup: database → AI gateway → MCP server → connect your AI.
-
-### After You're Done
-
-This guide builds the system. The companion prompt pack — **[Open Brain: Companion Prompts](https://promptkit.natebjones.com/20260224_uq1_promptkit_1)** — makes it useful. It includes prompts for migrating your existing AI memories into the brain, migrating an existing second brain system, discovering use cases specific to your workflow, capture templates that optimize metadata extraction, and a weekly review ritual. Finish the setup first, then grab the prompts.
-
-## Cost Breakdown
-
-| Service | Cost |
-| ------- | ---- |
-| Supabase (free tier) | $0 |
-| Embeddings (text-embedding-3-small) | ~$0.02 / million tokens |
-| Metadata extraction (gpt-4o-mini) | ~$0.15 / million input tokens |
-
-For 20 thoughts/day: roughly $0.10–0.30/month in API costs.
+Supabase has a free built-in AI assistant in every project dashboard (chat icon, bottom-right). It knows all of Supabase's documentation and can help with database setup, SQL errors, and configuration issues.
 
 ---
 
 ## Credential Tracker
 
-You're going to generate API keys, passwords, and IDs across three different services. You'll need them at specific steps later — sometimes minutes after you create them, sometimes much later. Don't trust your memory.
-
-> Copy the block below into a text editor (Notes, TextEdit, Notepad) and fill it in as you go. Each item tells you which step generates it.
+You'll generate keys across two services. Copy this into a text editor and fill it in as you go:
 
 ```text
-OPEN BRAIN -- CREDENTIAL TRACKER
-Keep this file. Fill in as you go.
+OPEN BRAIN CLI -- CREDENTIAL TRACKER
 --------------------------------------
 
 SUPABASE
-  Account email:      ____________
-  Account password:   ____________
   Database password:  ____________ <- Step 1
-  Project name:       ____________
   Project ref:        ____________ <- Step 1
-  Project URL:        ____________ <- Step 3
-  Secret key:         ____________ <- Step 3 (formerly "Service role key")
+  Project URL:        ____________ <- Step 2
+  Secret key:         ____________ <- Step 2
 
 OPENROUTER
-  Account email:      ____________
-  Account password:   ____________
-  API key:            ____________ <- Step 4
-
-GENERATED DURING SETUP
-  MCP Access Key:     ____________ <- Step 5
-  MCP Server URL:     ____________ <- Step 6
-  MCP Connection URL: ____________ <- Step 6 (server URL + ?key=your-access-key)
+  API key:            ____________ <- Step 3
 
 --------------------------------------
 ```
-
-> Seriously — copy that now. You'll need these credentials later.
 
 ---
 
 ## Step 1: Create Your Supabase Project
 
-Supabase is your database. It stores your thoughts as raw text, vector embeddings, and structured metadata. It also gives you a REST API automatically.
+Supabase is your database. It stores your thoughts as raw text, vector embeddings, and structured metadata — and gives you a REST API automatically.
 
-1. Go to supabase.com and sign up (GitHub login is fastest)
-2. Click **New Project** in the dashboard
+1. Go to [supabase.com](https://supabase.com) and sign up (GitHub login is fastest)
+2. Click **New Project**
 3. Pick your organization (default is fine)
 4. Set Project name: `open-brain` (or whatever you want)
-5. Generate a strong Database password — paste into credential tracker NOW
+5. Generate a strong Database password — paste into your credential tracker NOW
 6. Pick the Region closest to you
 7. Click **Create new project** and wait 1–2 minutes
 
-> Grab your Project ref — it's the random string in your dashboard URL: `supabase.com/dashboard/project/THIS_PART`. Paste it into the tracker.
+> Grab your **Project ref** — it's the random string in your dashboard URL: `supabase.com/dashboard/project/THIS_PART`. Paste it into the tracker.
 
----
+### Set Up the Database
 
-## Step 2: Set Up the Database
+Three SQL commands, pasted one at a time into the Supabase SQL Editor.
 
-Three SQL commands, pasted one at a time. This creates your storage table, your search function, and your security policy.
+**Enable the vector extension:** In the left sidebar: **Database → Extensions** → search for "vector" → flip **pgvector ON**.
 
-### Enable the Vector Extension
-
-In the left sidebar: **Database → Extensions** → search for "vector" → flip **pgvector ON**.
-
-### Create the Thoughts Table
-
-In the left sidebar: **SQL Editor → New query** → paste and Run:
+**Create the thoughts table:** In the left sidebar: **SQL Editor → New query** → paste and Run:
 
 ```sql
 -- Create the thoughts table
@@ -158,9 +110,7 @@ create trigger thoughts_updated_at
   execute function update_updated_at();
 ```
 
-### Create the Search Function
-
-New query → paste and Run:
+**Create the search function:** New query → paste and Run:
 
 ```sql
 -- Semantic search function
@@ -196,9 +146,7 @@ end;
 $$;
 ```
 
-### Lock Down Security
-
-One more new query:
+**Lock down security:** One more new query:
 
 ```sql
 -- Enable Row Level Security
@@ -211,50 +159,46 @@ create policy "Service role full access"
   using (auth.role() = 'service_role');
 ```
 
-### Quick Verification
-
-Table Editor should show the `thoughts` table with columns: id, content, embedding, metadata, created_at, updated_at. Database → Functions should show `match_thoughts`.
+**Verify:** Table Editor should show the `thoughts` table with columns: id, content, embedding, metadata, created_at, updated_at. Database → Functions should show `match_thoughts`.
 
 ---
 
-## Step 3: Save Your Connection Details
+## Step 2: Save Your Connection Details
 
 In the left sidebar: **Settings** (gear icon) → **API**. Copy these into your credential tracker:
 
-- **Project URL** — Listed in the API settings section under "Project URL"
-- **Secret key** — Under "API keys," this is the key formerly labeled "Service role key." Same key, new name — click reveal and copy it.
+- **Project URL** — Listed under "Project URL"
+- **Secret key** — Under "API keys," click reveal on the key formerly labeled "Service role key." Same key, new name.
 
-> Treat the Secret key like a password. Anyone with it has full access to your data. You may also see a "Publishable key" listed — that's the anon key surfaced more prominently in the updated Supabase UI. You don't need it for this setup.
+> Treat the Secret key like a password. Anyone with it has full access to your data.
 
 ---
 
-## Step 4: Get an OpenRouter API Key
+## Step 3: Get an OpenRouter API Key
 
-OpenRouter is a universal AI API gateway — one account gives you access to every major model. We're using it for embeddings and lightweight LLM metadata extraction.
+OpenRouter is a universal AI gateway — one key for embeddings and metadata extraction.
 
-Why OpenRouter instead of OpenAI directly? One account, one key, one billing relationship — and it future-proofs you for Claude, Gemini, or any other model later.
-
-1. Go to openrouter.ai and sign up
-2. Go to openrouter.ai/keys
+1. Go to [openrouter.ai](https://openrouter.ai) and sign up
+2. Go to [openrouter.ai/keys](https://openrouter.ai/keys)
 3. Click **Create Key**, name it `open-brain`
-4. Copy the key into your credential tracker immediately
+4. Copy the key into your credential tracker
 5. Add $5 in credits under Credits (lasts months)
 
 ---
 
-## Step 4b: CLI Setup (Terminal AI Tools)
-
-> **Skip this step** if you use GUI clients (Claude Desktop, ChatGPT, Cursor). This is only for developers using terminal-based AI tools like Claude Code, Codex, or Gemini CLI.
-
-If you use a terminal-based AI tool, you can skip Steps 5–7 entirely and use the `ob` CLI instead. It provides the same four capabilities (capture, search, recent, stats) plus delete and connectivity checks — using just `curl` and `jq`.
-
-### Install the CLI
+## Step 4: Install the `ob` CLI
 
 ```bash
+# Clone the repo
+git clone https://github.com/az9713/open-brain-cli.git
+
+# Copy to your PATH
 mkdir -p ~/.local/bin
-cp resources/ob-cli/ob ~/.local/bin/ob
+cp open-brain-cli/resources/ob-cli/ob ~/.local/bin/ob
 chmod +x ~/.local/bin/ob
-export PATH="$HOME/.local/bin:$PATH"  # Add to ~/.bashrc or ~/.zshrc
+
+# Add to PATH if needed (add this line to ~/.bashrc or ~/.zshrc)
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
 ### Set Environment Variables
@@ -262,351 +206,99 @@ export PATH="$HOME/.local/bin:$PATH"  # Add to ~/.bashrc or ~/.zshrc
 Add to your `~/.bashrc`, `~/.zshrc`, or `~/.profile`:
 
 ```bash
-export OB_SUPABASE_URL="your-project-url-from-step-3"
-export OB_SUPABASE_KEY="your-secret-key-from-step-3"
-export OB_OPENROUTER_KEY="your-openrouter-key-from-step-4"
+export OB_SUPABASE_URL="your-project-url-from-step-2"
+export OB_SUPABASE_KEY="your-secret-key-from-step-2"
+export OB_OPENROUTER_KEY="your-openrouter-key-from-step-3"
 ```
 
-Reload your shell: `source ~/.bashrc` (or `~/.zshrc`).
-
-### Verify
+Reload your shell:
 
 ```bash
-ob check                              # Test connectivity
-ob capture "My first Open Brain thought"  # Save a test thought
-ob search "first thought"             # Search for it
-```
-
-**You're done.** Skip to [Step 8: Use It](#step-8-use-it). Steps 5–7 are for GUI clients only.
-
-> **Windows users:** The `ob` script requires Git Bash, WSL, or a similar bash environment.
-
----
-
-## Step 5: Create an Access Key
-
-> **GUI clients only.** If you set up the `ob` CLI in Step 4b, skip ahead to [Step 8](#step-8-use-it).
-
-Your MCP server will be a public URL. The Supabase project ref in that URL is random enough that nobody will stumble onto it, but let's close the gap entirely. You'll generate a simple access key that the server checks on every request. Takes 30 seconds.
-
-> **New to the terminal?** The "terminal" is the text-based command line on your computer. On Mac, open the app called **Terminal** (search for it in Spotlight). On Windows, open **PowerShell**. Everything below gets typed there, not in your browser.
-
-In your terminal, generate a random key:
-
-```bash
-# Mac/Linux
-openssl rand -hex 32
-
-# Windows (PowerShell)
--join ((1..32) | ForEach-Object { '{0:x2}' -f (Get-Random -Maximum 256) })
-```
-
-Copy the output — it'll look something like `a3f8b2c1d4e5...` (64 characters). Paste it into your credential tracker under MCP Access Key.
-
-Set it as a Supabase secret:
-
-```bash
-supabase secrets set MCP_ACCESS_KEY=your-generated-key-here
+source ~/.bashrc   # or ~/.zshrc
 ```
 
 ---
 
-## Step 6: Deploy the MCP Server
-
-> **GUI clients only.** If you set up the `ob` CLI in Step 4b, skip ahead to [Step 8](#step-8-use-it).
-
-One Edge Function. Four MCP tools: semantic search, browse recent thoughts, stats, and capture. This gives any MCP-connected AI the ability to read and write to your brain.
-
-### Install the Supabase CLI
-
-> **Mac users:** If you already have Homebrew installed (you'll know — it's the thing you install with `brew`), use the first option. **Windows users:** use Scoop — Supabase recommends it over npm for Windows because it handles PATH and permissions cleanly. **Linux or Mac without Homebrew:** use npm.
+## Step 5: Verify
 
 ```bash
-# Mac with Homebrew
-brew install supabase/tap/supabase
+# Check connectivity
+ob check
 
-# Windows with Scoop (recommended)
-# Install Scoop first if you don't have it:
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+# Capture your first thought
+ob capture "Sarah mentioned she's thinking about leaving her job to start a consulting business"
 
-# Then install Supabase:
-scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
-scoop install supabase
+# Search by meaning (not keywords)
+ob search "career changes"
 
-# Linux or Mac without Homebrew
-npm install -g supabase
+# View recent thoughts
+ob recent
+
+# Check stats
+ob stats
 ```
 
-Verify it worked:
+Open your Supabase dashboard → Table Editor → `thoughts`. You should see your captured thought with its embedding and extracted metadata.
 
-```bash
-supabase --version
-```
-
-### Log In and Link
-
-```bash
-supabase login
-supabase link --project-ref YOUR_PROJECT_REF
-```
-
-Replace `YOUR_PROJECT_REF` with the project ref from your credential tracker (Step 1).
-
-### Set Your OpenRouter Secret
-
-```bash
-supabase secrets set OPENROUTER_API_KEY=your-openrouter-key-here
-```
-
-> SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are automatically available inside Edge Functions — you don't need to set them.
-
-### Create the Function
-
-```bash
-supabase functions new open-brain-mcp
-```
-
-### Add Dependencies
-
-Create `supabase/functions/open-brain-mcp/deno.json`:
-
-```json
-{
-  "imports": {
-    "@hono/mcp": "npm:@hono/mcp@0.1.1",
-    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@1.24.3",
-    "hono": "npm:hono@4.9.2",
-    "zod": "npm:zod@4.1.13",
-    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.47.10"
-  }
-}
-```
-
-### Write the Server
-
-Open `supabase/functions/open-brain-mcp/index.ts` and replace its entire contents with the MCP server code from the [original guide](https://promptkit.natebjones.com/20260224_uq1_guide_main).
-
-### Deploy
-
-```bash
-supabase functions deploy open-brain-mcp --no-verify-jwt
-```
-
-Your MCP server is now live at:
-
-```text
-https://YOUR_PROJECT_REF.supabase.co/functions/v1/open-brain-mcp
-```
-
-Replace `YOUR_PROJECT_REF` with the project ref from your credential tracker (Step 1). Paste the full URL into your credential tracker as the MCP Server URL.
-
-Now build your **MCP Connection URL** by adding your access key to the end:
-
-```text
-https://YOUR_PROJECT_REF.supabase.co/functions/v1/open-brain-mcp?key=your-access-key-from-step-10
-```
-
-Paste this into your credential tracker as the MCP Connection URL. This is what you'll give to AI clients that support remote MCP — one URL, no extra config.
-
-> That's it. No npm install, no TypeScript build, no local server to keep running. It's deployed alongside your capture function and runs on Supabase's infrastructure.
+**You're done.** Your Open Brain is live.
 
 ---
 
-## Step 7: Connect to Your AI
+## Commands Reference
 
-> **GUI clients only.** If you set up the `ob` CLI in Step 4b, skip ahead to [Step 8](#step-8-use-it).
+| Command | Description |
+|---|---|
+| `ob capture "text"` | Save a thought with embedding + metadata |
+| `ob search "query" [--threshold N] [--count N] [--json]` | Semantic search |
+| `ob recent [count]` | List recent thoughts (default: 10) |
+| `ob delete <thought-id>` | Delete a thought by ID |
+| `ob stats` | Knowledge base statistics |
+| `ob check` | Verify connectivity |
+| `ob version` | Version and config status |
 
-You need your MCP Connection URL from the credential tracker — the one with `?key=` at the end.
-
-### Claude Desktop
-
-1. Open Claude Desktop → **Settings** → **Connectors**
-2. Click **Add custom connector**
-3. Name: `Open Brain`
-4. Remote MCP server URL: paste your **MCP Connection URL** (the one ending in `?key=your-access-key`)
-5. Click **Add**
-
-That's it. Start a new conversation, and Claude will have access to your Open Brain tools. You can enable or disable it per conversation via the "+" button → Connectors.
-
-> No JSON config files. No Node.js. No terminal. If you had trouble with earlier versions of this guide, this is the fix.
-
-### ChatGPT
-
-Requires a paid ChatGPT plan (Plus, Pro, Business, Enterprise, or Edu) and works on the web at chatgpt.com. Not available on mobile.
-
-**Enable Developer Mode (one-time setup):**
-
-1. Go to chatgpt.com → click your profile icon → **Settings**
-2. Navigate to **Apps & Connectors** → **Advanced settings**
-3. Toggle **Developer mode** ON
-
-> Enabling Developer Mode disables ChatGPT's built-in Memory feature. Yes, that's ironic for a brain tool. Your Open Brain replaces that functionality anyway — and it works across every AI, not just ChatGPT.
-
-**Add the connector:**
-
-1. In Settings → **Apps & Connectors**, click **Create**
-2. Name: `Open Brain`
-3. Description: `Personal knowledge base with semantic search` (or whatever you want — this is just for your reference)
-4. MCP endpoint URL: paste your **MCP Connection URL** (the one ending in `?key=your-access-key`)
-5. Authentication: select **No Authentication** (your access key is embedded in the URL)
-6. Click **Create**
-
-**Using it:** Start a new conversation and make sure the Open Brain connector is enabled — check the tools/apps panel at the top of the chat. ChatGPT is less intuitive than Claude at picking the right MCP tool automatically. If it doesn't use your brain on its own, be explicit: "Use the Open Brain search_thoughts tool to find my notes about project planning." After it gets the pattern once or twice in a conversation, it usually picks up the habit.
-
-### Claude Code
-
-```bash
-claude mcp add --transport http open-brain \
-  https://YOUR_PROJECT_REF.supabase.co/functions/v1/open-brain-mcp \
-  --header "x-brain-key: your-access-key-from-step-10"
-```
-
-### Other Clients (Cursor, VS Code Copilot, Windsurf)
-
-Every MCP client handles remote servers slightly differently. The server accepts your access key two ways — pick whichever your client supports:
-
-**Option A: URL with key (easiest).** If your client has a field for a remote MCP server URL, paste the full MCP Connection URL including `?key=your-access-key`. This works for any client that supports remote MCP without requiring headers.
-
-**Option B: mcp-remote bridge.** If your client only supports local stdio servers (configured via a JSON config file), use `mcp-remote` to bridge to the remote server. This requires Node.js installed.
-
-```json
-{
-  "mcpServers": {
-    "open-brain": {
-      "command": "npx",
-      "args": [
-        "mcp-remote",
-        "https://YOUR_PROJECT_REF.supabase.co/functions/v1/open-brain-mcp",
-        "--header",
-        "x-brain-key:${BRAIN_KEY}"
-      ],
-      "env": {
-        "BRAIN_KEY": "your-access-key-from-step-10"
-      }
-    }
-  }
-}
-```
-
-> Note: no space after the colon in `x-brain-key:${BRAIN_KEY}`. Some clients have a bug where spaces inside args get mangled.
+See the full [CLI Reference](../resources/ob-cli/README.md) for details on flags, exit codes, and environment variables.
 
 ---
 
-## Step 8: Use It
+## What to Do Next
 
-Ask your AI naturally. It picks the right tool automatically:
-
-| Prompt | Tool Used |
-| ------ | --------- |
-| "Save this: decided to move the launch to March 15 because of the QA blockers" | Capture thought |
-| "Remember that Marcus wants to move to the platform team" | Capture thought |
-| "What did I capture about career changes?" | Semantic search |
-| "What did I capture this week?" | Browse recent |
-| "How many thoughts do I have?" | Stats overview |
-| "Find my notes about the API redesign" | Semantic search |
-| "Show me my recent ideas" | Browse + filter |
-| "Who do I mention most?" | Stats |
-
-Start by capturing a test thought. In your connected AI, say:
-
-```text
-Remember this: Sarah mentioned she's thinking about leaving her job to start a consulting business
-```
-
-Wait a few seconds. Your AI should confirm the capture and show you the extracted metadata (type, topics, people, action items). Then open Supabase dashboard → Table Editor → thoughts. You should see one row with your message, an embedding, and metadata.
-
-Now try searching:
-
-```text
-What did I capture about Sarah?
-```
-
-Your AI should retrieve the thought you just saved.
-
-> The capture tool works from any MCP-connected AI — Claude Desktop, ChatGPT, Claude Code, Cursor. Wherever you're working, you can save a thought without switching apps.
+- **[Quick Start Guide](QUICKSTART.md)** — 10 quick wins to build the capture habit
+- **[Companion Prompts](02-companion-prompts.md)** — Memory migration, use case discovery, weekly review
+- **[Extensions](../extensions/)** — Add household knowledge, meal planning, CRM, and more
+- **[User Guide](USER_GUIDE.md)** — Full guide with use cases and tips
 
 ---
 
 ## Troubleshooting
 
-If the specific suggestions below don't solve your issue, remember: the Supabase AI assistant (chat icon, bottom-right of your dashboard) can help diagnose problems with anything Supabase-related. Paste the error message and tell it what step you're on.
+**`ob check` fails on Supabase**
 
-**Claude Desktop tools don't appear**
+Double-check your `OB_SUPABASE_URL` and `OB_SUPABASE_KEY`. The URL should be `https://your-ref.supabase.co` (no trailing slash). The key is the Secret/service role key, not the anon key.
 
-Make sure you added the connector in Settings → Connectors (not by editing the JSON config file). Verify the connector is enabled for your conversation — click the "+" button at the bottom of the chat, then Connectors, and check that Open Brain is toggled on. If the connector was added but tools still don't show, try removing and re-adding it with the same URL.
+**`ob capture` fails with "embedding failed"**
 
-**ChatGPT doesn't use the Open Brain tools**
+Your OpenRouter key may be invalid or out of credits. Check at [openrouter.ai/keys](https://openrouter.ai/keys). Run `ob check` to test connectivity.
 
-First, confirm Developer Mode is enabled (Settings → Apps & Connectors → Advanced settings). Without it, ChatGPT only exposes limited MCP functionality that won't cover Open Brain's full toolset. Next, check that the connector is active for your current conversation — look for it in the tools/apps panel. If it's connected but ChatGPT ignores it, be direct: "Use the Open Brain search_thoughts tool to search for [topic]." ChatGPT often needs explicit tool references the first few times before it starts picking them up automatically.
+**`ob search` returns no results**
 
-**Getting 401 errors**
+Make sure you've captured at least one thought first. Try lowering the threshold: `ob search "your query" --threshold 0.3`. Semantic search gets more accurate as you add more thoughts.
 
-The access key doesn't match what's stored in Supabase secrets. Double-check that the `?key=` value in your URL matches your MCP Access Key exactly. If you're using the header approach (Claude Code or mcp-remote), the header must be `x-brain-key` (lowercase, with the dash).
+**Metadata is wrong or incomplete**
 
-**Search returns no results**
+Metadata extraction is best-effort — the LLM guesses based on your text. The embedding (which powers search) works regardless of metadata quality. For better metadata, be specific when capturing: include names, dates, and action items explicitly.
 
-Make sure you've captured at least one thought first (see Step 8). Try asking the AI to "search with threshold 0.3" for a wider net. If that still returns nothing, check the Edge Function logs in the Supabase dashboard for errors.
+**Windows: "command not found" or "permission denied"**
 
-**Tools work but responses are slow**
-
-First search on a cold function takes a few seconds — the Edge Function is waking up. Subsequent calls are faster. If it's consistently slow, check your Supabase project region — pick the one closest to you.
-
-**Capture tool saves but metadata is wrong**
-
-The metadata extraction is best-effort — the LLM is making its best guess with limited context. The embedding is what powers semantic search, and that works regardless of how the metadata gets classified. If you consistently want a specific classification, use the capture templates from the prompt kit to give the LLM clearer signals.
+The `ob` script requires a bash environment. Use Git Bash, WSL, or similar. Make sure the script is executable: `chmod +x ~/.local/bin/ob`.
 
 ---
 
-## How It Works Under the Hood
+## Optional: MCP Server for GUI Clients
 
-**When you capture from any AI via MCP:** your AI client sends the text to the `capture_thought` tool → the MCP server generates an embedding (1536-dimensional vector of meaning) AND extracts metadata via LLM in parallel → both get stored as a single row in Supabase → confirmation returned to your AI.
+If you also use GUI-based AI tools (Claude Desktop, ChatGPT, Cursor), you can deploy an MCP server alongside the CLI. Both paths read and write the same `thoughts` table.
 
-**When you search your brain:** your AI client sends the query to the MCP Edge Function → the function generates an embedding of your question → Supabase matches it against every stored thought by vector similarity → results come back ranked by meaning, not keywords.
-
-The embedding is what makes retrieval powerful. "Sarah's thinking about leaving" and "What did I note about career changes?" match semantically even though they share zero keywords. The metadata is a bonus layer for structured filtering on top.
-
-### Swapping Models Later
-
-Because you're using OpenRouter, you can swap models by editing the model strings in the Edge Function code and redeploying. Browse available models at openrouter.ai/models. Just make sure embedding dimensions match (1536 for the current setup).
+MCP setup requires deploying a Supabase Edge Function and takes an additional 20–30 minutes. See the [original Open Brain guide](https://github.com/NateBJones-Projects/OB1) for MCP deployment instructions.
 
 ---
 
-## Optional: Add Capture Sources
-
-Your MCP server handles both reading and writing. But if you want a quick-capture channel outside your AI tools:
-
-- **[Slack Capture](../integrations/slack-capture/)** — Type thoughts in a Slack channel, automatically embedded and stored
-- More integrations in [`/integrations`](../integrations/)
-
----
-
-## What You Just Built — And What You Can Build Next
-
-You just used two free services, some copy-pasted code, and a built-in AI assistant to build a personal knowledge system with semantic search, an open write protocol, and an open read protocol. No CS degree. No local servers. No monthly SaaS fee.
-
-Here's the thing worth noticing: that Supabase AI assistant that helped you through the setup? It has access to all of Supabase's documentation, understands your project structure, and can help you build on top of what you've created. That's not a one-time trick for getting unstuck during setup. That's a permanent building partner.
-
-Want to add a new capture source? Ask it how to create another Edge Function. Want to add a new field to your thoughts table? Ask it to help you write the SQL migration. Want to understand how to add authentication so you can share your brain with a teammate? It knows the docs better than you ever will.
-
-You just built AI infrastructure using AI. That pattern doesn't stop here.
-
-Got stuck or want to share what you've built? Join the [Open Brain Discord](https://discord.gg/Cgh9WJEkeG) — there's a `#help` channel for troubleshooting and a `#show-and-tell` channel for showing off.
-
----
-
-## Your Next Step
-
-Your Open Brain is live. Now make it work for you. The **[Companion Prompts](02-companion-prompts.md)** cover the full lifecycle from here:
-
-- **Memory Migration** — Pull everything your AI already knows about you into your brain so every tool starts with context instead of zero
-- **Second Brain Migration** — Bring your existing notes from Notion, Obsidian, or any other system into your Open Brain without starting over
-- **Open Brain Spark** — Personalized use case discovery based on your actual workflow, not generic examples
-- **Quick Capture Templates** — Five patterns optimized for clean metadata extraction so your brain tags and retrieves accurately
-- **The Weekly Review** — A Friday ritual that surfaces themes, forgotten action items, and connections you missed
-
-Start with the Memory Migration. If you have an existing second brain, run the Second Brain Migration next. Then use the Spark to figure out what to capture going forward. The templates build the daily habit. The weekly review closes the loop.
-
----
-
-*Built by Nate B. Jones — companion to "Your Second Brain Is Closed. Your AI Can't Use It. Here's the Fix."*
+*Originally created by [Nate B. Jones](https://natesnewsletter.substack.com/). CLI edition maintained at [github.com/az9713/open-brain-cli](https://github.com/az9713/open-brain-cli).*

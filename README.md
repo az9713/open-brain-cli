@@ -37,46 +37,25 @@ You type:  ob search "dashboard redesign decisions"
            └─► pgvector finds semantically similar thoughts (not keyword matching)
 ```
 
-## Quick Start
+## Setup
 
-### Prerequisites
+Follow the **[Setup Guide](docs/01-getting-started.md)** — it covers everything from creating your Supabase database to capturing your first thought. Takes about 10 minutes.
 
-- A Supabase project (free tier) with the `thoughts` table and `match_thoughts()` function — see [Database Setup](docs/01-getting-started.md#step-1-create-your-supabase-project) (Steps 1-3)
-- An [OpenRouter](https://openrouter.ai) API key ($5 credit lasts months)
-- `curl` and `jq` installed
-- **Windows:** Requires Git Bash, WSL, or similar bash environment
-
-### Install
+Already set up? Here's the install shortcut:
 
 ```bash
-# Copy the CLI to your PATH
-mkdir -p ~/.local/bin
-cp resources/ob-cli/ob ~/.local/bin/ob
-chmod +x ~/.local/bin/ob
-
-# Or clone and install
 git clone https://github.com/az9713/open-brain-cli.git
+mkdir -p ~/.local/bin
 cp open-brain-cli/resources/ob-cli/ob ~/.local/bin/ob
 chmod +x ~/.local/bin/ob
-```
 
-### Configure
-
-Add to `~/.bashrc` or `~/.zshrc`:
-
-```bash
+# Set env vars (add to ~/.bashrc or ~/.zshrc)
 export OB_SUPABASE_URL="https://your-project-ref.supabase.co"
 export OB_SUPABASE_KEY="your-service-role-key"
 export OB_OPENROUTER_KEY="your-openrouter-key"
-```
 
-### Verify
-
-```bash
-ob check     # test connectivity to Supabase + OpenRouter
-ob capture "My first Open Brain thought"
-ob search "first thought"
-ob recent
+# Verify
+ob check
 ```
 
 ## Commands
@@ -103,20 +82,19 @@ ob recent
 
 ## GUI Clients (Optional)
 
-If you also use GUI-based AI tools (Claude Desktop, ChatGPT, Cursor), you can deploy the MCP server alongside the CLI. Both paths read and write the same `thoughts` table. See the [Full Setup Guide](docs/01-getting-started.md) for MCP deployment.
+If you also use GUI-based AI tools (Claude Desktop, ChatGPT, Cursor), you can deploy an MCP server alongside the CLI. Both paths read and write the same `thoughts` table. See the [original Open Brain repo](https://github.com/NateBJones-Projects/OB1) for MCP deployment instructions.
 
 ## Documentation
 
 | Document | What It Covers |
 | -------- | -------------- |
-| [CLI Reference](resources/ob-cli/README.md) | Full `ob` CLI documentation |
-| [CLI Architecture](docs/CLI_DIRECT_APPROACH.md) | CLI-Direct architecture, AI tool configuration |
+| [Setup Guide](docs/01-getting-started.md) | Complete setup: database, API keys, CLI install, verification |
+| [CLI Reference](resources/ob-cli/README.md) | Full `ob` CLI documentation, flags, exit codes |
 | [Quick Start Guide](docs/QUICKSTART.md) | First 10 wins with your Open Brain |
 | [User Guide](docs/USER_GUIDE.md) | Use cases, tips, and troubleshooting |
 | [API Reference](docs/API_REFERENCE.md) | `ob` CLI reference, MCP tools, database schemas |
 | [Architecture](docs/ARCHITECTURE.md) | System design, data flows, security boundaries |
 | [Developer Guide](docs/DEVELOPER_GUIDE.md) | Build extensions, recipes, and integrations |
-| [Setup Guide](docs/01-getting-started.md) | Full system build with MCP (for GUI clients) |
 | [Companion Prompts](docs/02-companion-prompts.md) | Memory migration, use case discovery, weekly review |
 | [FAQ](docs/03-faq.md) | Common issues and architecture questions |
 
