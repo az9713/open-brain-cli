@@ -20,6 +20,8 @@ ob stats                      # knowledge base overview
 
 No MCP server required. No Edge Function deployment. No Node.js. Just `curl`, `jq`, and three environment variables.
 
+> **Note:** The `ob` CLI is under active development and testing. Expect rough edges — feedback and bug reports are welcome via [GitHub Issues](https://github.com/az9713/open-brain-cli/issues).
+
 > Open Brain was originally created by [Nate B. Jones](https://natesnewsletter.substack.com/). This repository is the CLI edition, maintained at [github.com/az9713/open-brain-cli](https://github.com/az9713/open-brain-cli).
 
 ## How It Works
